@@ -20,3 +20,5 @@ How to trigger openspec
 this will create proposalplace a city in the center tile of the map. Please create an OpenSpec change proposal for this feature
 opsx-explore - ai will analyze proposal and refine it 
 opsx-apply [change-name] will try to implement the change
+
+Deployment is on vercel use github account

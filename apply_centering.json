@@ -1,0 +1,24 @@
+{
+  "changeName": "city-icon-centering",
+  "changeDir": "E:\\vibeProjects\\boardGame\\openspec\\changes\\city-icon-centering",
+  "schemaName": "spec-driven",
+  "contextFiles": {
+    "proposal": "E:\\vibeProjects\\boardGame\\openspec\\changes\\city-icon-centering\\proposal.md",
+    "design": "E:\\vibeProjects\\boardGame\\openspec\\changes\\city-icon-centering\\design.md",
+    "tasks": "E:\\vibeProjects\\boardGame\\openspec\\changes\\city-icon-centering\\tasks.md"
+  },
+  "progress": {
+    "total": 1,
+    "complete": 1,
+    "remaining": 0
+  },
+  "tasks": [
+    {
+      "id": "1",
+      "description": "1. Update `<path>` coordinates in `src/components/Map/HexTile.tsx` to precisely center the house within the bounding footprint.",
+      "done": true
+    }
+  ],
+  "state": "all_done",
+  "instruction": "All tasks are complete! This change is ready to be archived.\nConsider running tests and reviewing the changes before archiving."
+}

@@ -1,0 +1,1 @@
+- [x] 1. Update `<path>` coordinates in `src/components/Map/HexTile.tsx` to precisely center the house within the bounding footprint.

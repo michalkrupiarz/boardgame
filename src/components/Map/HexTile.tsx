@@ -46,7 +46,7 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClai
             />
             {isCity && (
                 <path 
-                    d="M-15,-60 L0,-75 L15,-60 L15,-40 L-15,-40 Z" 
+                    d="M-15,0 L0,-15 L15,0 L15,20 L-15,20 Z" 
                     fill="var(--accent)" 
                     stroke="white" 
                     strokeWidth="2" 

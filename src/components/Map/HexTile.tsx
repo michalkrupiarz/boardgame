@@ -8,6 +8,7 @@ interface HexTileProps {
     isSelected: boolean;
     isClaimed: boolean;
     isCity: boolean;
+    population?: number;
     onClick: (tile: Tile) => void;
 }
 
@@ -15,7 +16,7 @@ interface HexTileProps {
 // pointy top: width = sqrt(3)*size, height = 2*size.  with size = 100
 // w = 173.205, h = 200
 
-export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClaimed, isCity, onClick }) => {
+export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClaimed, isCity, population, onClick }) => {
     // Axial to pixel coords (pointy top)
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
@@ -45,12 +46,27 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClai
                 transform="translate(-43.3, -75)" // center the polygon at x,y
             />
             {isCity && (
-                <path 
-                    d="M-15,0 L0,-15 L15,0 L15,20 L-15,20 Z" 
-                    fill="var(--accent)" 
-                    stroke="white" 
-                    strokeWidth="2" 
-                />
+                <g>
+                    <path 
+                        d="M-15,0 L0,-15 L15,0 L15,20 L-15,20 Z" 
+                        fill="var(--accent)" 
+                        stroke="white" 
+                        strokeWidth="2" 
+                    />
+                    {population !== undefined && (
+                        <text 
+                            x="0" 
+                            y="14" 
+                            fill="white" 
+                            fontSize="14" 
+                            fontWeight="bold" 
+                            textAnchor="middle"
+                            style={{ userSelect: 'none' }}
+                        >
+                            {population}
+                        </text>
+                    )}
+                </g>
             )}
             {/* Optional icon or details */}
         </g>

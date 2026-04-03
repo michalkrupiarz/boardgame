@@ -50,6 +50,7 @@ export const AVAILABLE_BUILDINGS: Building[] = [
 
 export interface City {
     name: string;
+    population: number;
     buildings: string[]; // Building IDs
     resources: Resources;
 }
@@ -90,6 +91,7 @@ export function getInitialState(mapSize: number = 7): GameState {
         turn: 1,
         city: {
             name: 'Capital',
+            population: 1,
             buildings: [],
             resources: {
                 gold: 10,
@@ -149,18 +151,41 @@ export function calculateTurnYield(state: GameState): Resources {
     return yieldResources;
 }
 
+export function getFoodThresholdForNextPopulation(currentPopulation: number): number {
+    let a = 1;
+    let b = 1;
+    for (let i = 0; i < currentPopulation; i++) {
+        const temp = a + b;
+        a = b;
+        b = temp;
+    }
+    return b;
+}
+
 export function nextTurn(state: GameState): GameState {
     const yields = calculateTurnYield(state);
+    
+    let newFood = state.city.resources.food + yields.food;
+    let newPopulation = state.city.population;
+    let threshold = getFoodThresholdForNextPopulation(newPopulation);
+
+    while (newFood >= threshold) {
+        newPopulation += 1;
+        const consumed = Math.floor(newFood * 0.8);
+        newFood -= consumed;
+        threshold = getFoodThresholdForNextPopulation(newPopulation);
+    }
     
     return {
         ...state,
         turn: state.turn + 1,
         city: {
             ...state.city,
+            population: newPopulation,
             resources: {
                 gold: state.city.resources.gold + yields.gold,
                 production: state.city.resources.production + yields.production,
-                food: state.city.resources.food + yields.food,
+                food: newFood,
                 culture: state.city.resources.culture + yields.culture,
                 science: state.city.resources.science + yields.science,
             }

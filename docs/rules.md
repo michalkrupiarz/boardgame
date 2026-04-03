@@ -16,7 +16,7 @@ The player who masters the balance between expansion, production, and prosperity
 
 **2.1** Each player begins the game with a city called **Capital**, placed on a Plains tile at the center of the map.
 
-**2.2** Cities start with the following resources:
+**2.2** Cities start with a **Population of 1** and the following resources:
 - **Gold:** 10
 - **Production:** 10
 - **Food:** 10
@@ -119,16 +119,30 @@ There are five resources in the game:
 
 ---
 
-## 8. Victory Conditions
+## 8. Population
+
+**8.1** Every city has a Population metric that starts at 1.
+
+**8.2** Population grows automatically at the end of the turn when the city accumulates enough stored Food.
+
+**8.3** The Food required for population growth scales sequentially, requiring 2, 3, 5, 8, 13, etc., Food for each successive level.
+
+**8.4** When a city's population grows, 80% (rounded down) of the city's currently stored Food is consumed as the cost of growth.
+
+**8.5** If a substantial surplus of Food is generated in a single turn, it is possible for a city's population to grow multiple times at once.
+
+---
+
+## 9. Victory Conditions
 
 *Victory conditions are yet to be defined. This section will be updated as the game develops.*
 
 ---
 
-## 9. Edge Cases & Clarifications
+## 10. Edge Cases & Clarifications
 
-**9.1** If a tile sits exactly on the boundary of the cultural radius (i.e., its distance equals the current radius), it **is** included in the harvest.
+**10.1** If a tile sits exactly on the boundary of the cultural radius (i.e., its distance equals the current radius), it **is** included in the harvest.
 
-**9.2** Terrain yields and building bonuses are both applied each turn — they are additive.
+**10.2** Terrain yields and building bonuses are both applied each turn — they are additive.
 
-**9.3** The center tile (city location) is always included in the harvest regardless of radius, as it is always at distance 0.
+**10.3** The center tile (city location) is always included in the harvest regardless of radius, as it is always at distance 0.

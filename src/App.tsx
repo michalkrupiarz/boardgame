@@ -26,6 +26,7 @@ function App() {
         <HexMap 
           tiles={gameState.map} 
           culture={gameState.city.resources.culture}
+          population={gameState.city.population}
           onTileClick={(tile) => setSelectedTileId(tile.id)} 
           selectedTileId={selectedTileId} 
         />

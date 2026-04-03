@@ -6,11 +6,12 @@ import { HexTile } from './HexTile';
 interface HexMapProps {
     tiles: Tile[];
     culture: number;
+    population?: number;
     onTileClick: (tile: Tile) => void;
     selectedTileId?: string;
 }
 
-export const HexMap: React.FC<HexMapProps> = ({ tiles, culture, onTileClick, selectedTileId }) => {
+export const HexMap: React.FC<HexMapProps> = ({ tiles, culture, population, onTileClick, selectedTileId }) => {
     const size = 50; // Radius of a hex
 
     // We can compute bounds of the map to center the SVG
@@ -57,6 +58,7 @@ export const HexMap: React.FC<HexMapProps> = ({ tiles, culture, onTileClick, sel
                                 isSelected={tile.id === selectedTileId}
                                 isClaimed={isClaimed}
                                 isCity={isCity}
+                                population={isCity ? population : undefined}
                                 onClick={onTileClick}
                             />
                         );

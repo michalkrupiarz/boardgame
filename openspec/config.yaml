@@ -20,8 +20,26 @@ context: |
     Testing: Vitest (Unit testing for pure game logic reducers)
     Rendering: SVG-based Hexagonal Geometry (for tile plotting & interactivity)
 
-  Rules:
-    create a file named rules, where all game rules will be stored
+  Rules File:
+    The canonical source of truth for all game rules is docs/rules.md.
+    ALWAYS read docs/rules.md before generating any artifact (proposal, design, spec, or tasks).
+    All proposals, designs, specs, and tasks must be consistent with the rules defined there.
+    If you are unsure whether a mechanic is a rule, check docs/rules.md first.
+
+  Rules Review Pass:
+    At the end of every /opsx:apply run, after all tasks are complete, you MUST perform a Rules Review Pass.
+    Steps:
+      1. Review all code and logic changes made during the apply run.
+      2. Apply the rule heuristic: "Does this change affect what a player can or cannot do,
+         or what the outcome of an action is?" If yes, it is a candidate rule.
+      3. Filter out implementation details (internal state, variable names, UI wiring that
+         does not change player experience).
+      4. If candidate rules are found, present them as a numbered list in player-friendly,
+         rulebook-style language (e.g. "On your turn, you may...").
+      5. Ask the reviewer: "Which of these would you like to add to docs/rules.md? (e.g. '1', '1 2', 'all', 'none')"
+      6. Write ONLY approved rules into the appropriate section of docs/rules.md.
+         Never write to docs/rules.md without explicit reviewer approval.
+      7. If no candidate rules are found, state clearly: "No new rules detected in this change."
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

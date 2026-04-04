@@ -86,6 +86,7 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                 <div style={{ marginTop: '20px' }}>
                     <button 
                         className="glass-panel"
+                        data-testid="toggle-worker-button"
                         style={{ 
                             width: '100%', 
                             padding: '10px', 

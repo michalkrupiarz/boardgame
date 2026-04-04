@@ -41,6 +41,8 @@ export const HexTile: React.FC<HexTileProps> = ({
             className={`hex-tile ${isSelected ? 'selected' : ''}`}
             style={{ opacity: isClaimed ? 1 : 0.4 }}
             onClick={() => onClick(tile)}
+            data-testid="hex-tile"
+            data-tile-id={tile.id}
         >
             <polygon 
                 points="0,50 43.3,25 86.6,50 86.6,100 43.3,125 0,100" 
@@ -77,6 +79,7 @@ export const HexTile: React.FC<HexTileProps> = ({
                 <g 
                     transform="translate(0, 0)"
                     style={{ transition: 'all 0.3s' }}
+                    data-testid="worker-head"
                 >
                     {/* Torso */}
                     <path 

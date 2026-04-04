@@ -72,7 +72,7 @@ There are five resources in the game:
 | Mountains | 0 | 3 | 0 | 0 | 1 |
 | Desert | 2 | 0 | 0 | 1 | 2 |
 
-**5.3** Only tiles that fall within your city's **cultural radius** contribute to your resource yield each turn.
+**5.3** A tile must fall within your city's **cultural radius** and be **worked by a citizen** to contribute its terrain yield to your resource pool at the end of each turn. (See Section 8 for citizen assignment).
 
 **5.4** The cultural radius is measured in hex steps from your city center (the center tile at position 0, 0).
 
@@ -131,6 +131,16 @@ There are five resources in the game:
 
 **8.5** If a substantial surplus of Food is generated in a single turn, it is possible for a city's population to grow multiple times at once.
 
+**8.6** Each point of **Population** your city has allows you to assign one **Citizen** to work a map tile within your cultural radius.
+
+**8.7** Only tiles that are actively being **worked** by a citizen provide food, gold, production, science, and culture each turn.
+
+**8.8** The **City Center** tile (where the city's icon is located) is always worked for free. It does not require or count against the current population of citizens.
+
+**8.9** Manually assigning a citizen to a specific tile in the city view **locks** that citizen until they are manually unassigned. Locked citizens won't be moved by the city's automatic management.
+
+**8.10** At the end of every turn, or when population increases, any available citizens who are not locked will be **automatically assigned** to the highest-yield available tiles that are currently within your cultural radius.
+
 ---
 
 ## 9. Victory Conditions
@@ -145,4 +155,4 @@ There are five resources in the game:
 
 **10.2** Terrain yields and building bonuses are both applied each turn — they are additive.
 
-**10.3** The center tile (city location) is always included in the harvest regardless of radius, as it is always at distance 0.
+**10.3** The center tile (city location) is always included in the harvest regardless of radius or population, as it is naturally worked for free.

@@ -53,6 +53,8 @@ export interface City {
     population: number;
     buildings: string[]; // Building IDs
     resources: Resources;
+    workedTileIds: string[]; // IDs of tiles currently worked by citizens
+    lockedTileIds: string[]; // IDs of tiles manually locked by the player
 }
 
 export interface GameState {
@@ -99,7 +101,9 @@ export function getInitialState(mapSize: number = 7): GameState {
                 food: 10,
                 culture: 0,
                 science: 0
-            }
+            },
+            workedTileIds: ['0,0'], // Initial worker on city center (optional, usually city center is free)
+            lockedTileIds: []
         },
         map: generateInitialMap(mapSize)
     };
@@ -116,6 +120,11 @@ export function getCurrentRadius(culture: number): number {
     return 1;
 }
 
+export function getTileYieldSum(tile: Tile): number {
+    const bonuses = terrainBonuses[tile.terrain];
+    return bonuses.gold + bonuses.production + bonuses.food + bonuses.culture + bonuses.science;
+}
+
 // Calculates the per-turn yield based on city buildings and mapped tile radius.
 export function calculateTurnYield(state: GameState): Resources {
     const yieldResources: Resources = {
@@ -126,7 +135,11 @@ export function calculateTurnYield(state: GameState): Resources {
 
     // Add map yields
     for (const tile of state.map) {
-        if (tile.isExplored && getDistance(tile.q, tile.r) <= currentRadius) {
+        const isCityCenter = tile.q === 0 && tile.r === 0;
+        const isWorked = state.city.workedTileIds.includes(tile.id);
+        
+        // Only harvest if it's the city center OR a worked tile
+        if (tile.isExplored && (isCityCenter || isWorked)) {
             const bonuses = terrainBonuses[tile.terrain];
             yieldResources.gold += bonuses.gold;
             yieldResources.production += bonuses.production;
@@ -211,4 +224,90 @@ export function buildBuilding(state: GameState, buildingId: string): GameState {
         };
     }
     return state;
+}
+
+export function toggleWorkedTile(state: GameState, tileId: string): GameState {
+    const tile = state.map.find(t => t.id === tileId);
+    if (!tile) return state;
+
+    // Cannot unassign city center if it's handled as "free"
+    if (tile.q === 0 && tile.r === 0) return state;
+
+    const currentRadius = getCurrentRadius(state.city.resources.culture);
+    if (getDistance(tile.q, tile.r) > currentRadius) return state;
+
+    const isAlreadyWorked = state.city.workedTileIds.includes(tileId);
+    let newWorked = [...state.city.workedTileIds];
+    let newLocked = [...state.city.lockedTileIds];
+
+    if (isAlreadyWorked) {
+        // Unassign
+        newWorked = newWorked.filter(id => id !== tileId);
+        newLocked = newLocked.filter(id => id !== tileId);
+    } else {
+        // Assign
+        if (newWorked.length < state.city.population) {
+            newWorked.push(tileId);
+            newLocked.push(tileId); // Manually added citizens are locked
+        } else {
+            // Swap with an unlocked citizen if possible
+            const unlockedTileId = newWorked.find(id => !newLocked.includes(id));
+            if (unlockedTileId) {
+                newWorked = newWorked.filter(id => id !== unlockedTileId);
+                newWorked.push(tileId);
+                newLocked.push(tileId);
+            } else {
+                // All citizens are locked, cannot assign more
+                return state;
+            }
+        }
+    }
+
+    return {
+        ...state,
+        city: {
+            ...state.city,
+            workedTileIds: newWorked,
+            lockedTileIds: newLocked
+        }
+    };
+}
+
+export function autoAssignCitizens(state: GameState): GameState {
+    const currentRadius = getCurrentRadius(state.city.resources.culture);
+    const population = state.city.population;
+    
+    // 1. Keep locked citizens
+    let newWorked = [...state.city.lockedTileIds];
+    const availableSlots = population - newWorked.length;
+
+    if (availableSlots <= 0) {
+        return {
+            ...state,
+            city: {
+                ...state.city,
+                workedTileIds: newWorked
+            }
+        };
+    }
+
+    // 2. Identify all candidates (in radius, not city center, not locked)
+    const candidates = state.map
+        .filter(t => t.isExplored)
+        .filter(t => getDistance(t.q, t.r) <= currentRadius)
+        .filter(t => !(t.q === 0 && t.r === 0))
+        .filter(t => !state.city.lockedTileIds.includes(t.id))
+        .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a));
+
+    // 3. Fill remaining slots
+    const extraTiles = candidates.slice(0, availableSlots).map(t => t.id);
+    newWorked = [...newWorked, ...extraTiles];
+
+    return {
+        ...state,
+        city: {
+            ...state.city,
+            workedTileIds: newWorked
+        }
+    };
 }

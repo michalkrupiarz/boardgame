@@ -41,6 +41,15 @@ context: |
          Never write to docs/rules.md without explicit reviewer approval.
       7. If no candidate rules are found, state clearly: "No new rules detected in this change."
 
+  Git Workflow:
+    1. Branching: Each proposal MUST be developed on its own dedicated feature branch (e.g., `git checkout -b feature/change-name`).
+    2. Commit Granularity: Every major step in the OpenSpec lifecycle must have its own commit.
+       - Proposal creation (`/opsx-propose`): Commit artifact generation.
+       - Exploration phase (`/opsx-explore`): Commit significant insights or design updates.
+       - Implementation phase (`/opsx-apply`): Commit codebase modifications.
+       - Archival phase (`/opsx-archive`): Finalize and merge into `main`.
+    3. Merging: Upon successful archival, the feature branch must be merged into the `main` branch.
+
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.
 # Example:

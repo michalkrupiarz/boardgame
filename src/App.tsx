@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield } from './state/GameState';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
@@ -27,6 +27,8 @@ function App() {
           tiles={gameState.map} 
           culture={gameState.city.resources.culture}
           population={gameState.city.population}
+          workedTileIds={gameState.city.workedTileIds}
+          lockedTileIds={gameState.city.lockedTileIds}
           onTileClick={(tile) => setSelectedTileId(tile.id)} 
           selectedTileId={selectedTileId} 
         />
@@ -88,6 +90,10 @@ function App() {
             <TileInfoPanel 
                 tile={selectedTile} 
                 culture={gameState.city.resources.culture}
+                isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
+                isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
+                canAssign={gameState.city.workedTileIds.length < gameState.city.population}
+                onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
                 onClose={() => setSelectedTileId(undefined)} 
             />
         )}

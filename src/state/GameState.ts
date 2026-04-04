@@ -131,8 +131,6 @@ export function calculateTurnYield(state: GameState): Resources {
         gold: 0, production: 0, food: 0, culture: 0, science: 0
     };
 
-    const currentRadius = getCurrentRadius(state.city.resources.culture);
-
     // Add map yields
     for (const tile of state.map) {
         const isCityCenter = tile.q === 0 && tile.r === 0;
@@ -188,8 +186,8 @@ export function nextTurn(state: GameState): GameState {
         newFood -= consumed;
         threshold = getFoodThresholdForNextPopulation(newPopulation);
     }
-    
-    return {
+
+    let newState: GameState = {
         ...state,
         turn: state.turn + 1,
         city: {
@@ -204,6 +202,13 @@ export function nextTurn(state: GameState): GameState {
             }
         }
     };
+
+    // Auto-assign any new population members
+    if (newPopulation > state.city.population) {
+        newState = autoAssignCitizens(newState);
+    }
+    
+    return newState;
 }
 
 export function buildBuilding(state: GameState, buildingId: string): GameState {

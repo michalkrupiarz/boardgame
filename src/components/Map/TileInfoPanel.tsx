@@ -4,10 +4,16 @@ import type { Tile } from '../../state/GameState';
 interface TileInfoPanelProps {
     tile: Tile | null;
     culture: number;
+    isWorked?: boolean;
+    isLocked?: boolean;
+    canAssign?: boolean;
+    onToggleWorker?: () => void;
     onClose: () => void;
 }
 
-export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({ tile, culture, onClose }) => {
+export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({ 
+    tile, culture, isWorked, isLocked, canAssign, onToggleWorker, onClose 
+}) => {
     if (!tile) return null;
 
     const bonuses = terrainBonuses[tile.terrain];
@@ -75,6 +81,37 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({ tile, culture, onC
                     <span className="text-culture">+{bonuses.culture}</span>
                 </div>
             </div>
+
+            {isClaimed && (tile.q !== 0 || tile.r !== 0) && (
+                <div style={{ marginTop: '20px' }}>
+                    <button 
+                        className="glass-panel"
+                        style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            fontWeight: '600', 
+                            color: 'white', 
+                            background: isWorked ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                            border: isWorked ? '1px solid white' : '1px solid rgba(255,255,255,0.2)',
+                            transition: 'all 0.2s'
+                        }}
+                        disabled={!isWorked && !canAssign}
+                        onClick={onToggleWorker}
+                    >
+                        {isWorked ? 'Remove Citizen' : 'Assign Citizen'}
+                    </button>
+                    {!isWorked && !canAssign && (
+                        <p style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '5px', textAlign: 'center' }}>
+                            Population limit reached!
+                        </p>
+                    )}
+                    {isWorked && isLocked && (
+                        <p style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)', marginTop: '5px', textAlign: 'center' }}>
+                            (Locked: Manual assignment)
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
 };

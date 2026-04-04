@@ -9,6 +9,8 @@ interface HexTileProps {
     isClaimed: boolean;
     isCity: boolean;
     population?: number;
+    isWorked?: boolean;
+    isLocked?: boolean;
     onClick: (tile: Tile) => void;
 }
 
@@ -16,7 +18,9 @@ interface HexTileProps {
 // pointy top: width = sqrt(3)*size, height = 2*size.  with size = 100
 // w = 173.205, h = 200
 
-export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClaimed, isCity, population, onClick }) => {
+export const HexTile: React.FC<HexTileProps> = ({ 
+    tile, size, isSelected, isClaimed, isCity, population, isWorked, isLocked, onClick 
+}) => {
     // Axial to pixel coords (pointy top)
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
@@ -68,7 +72,33 @@ export const HexTile: React.FC<HexTileProps> = ({ tile, size, isSelected, isClai
                     )}
                 </g>
             )}
-            {/* Optional icon or details */}
+            {/* Worker Icon (Human Head) in the middle of the tile */}
+            {isWorked && !isCity && (
+                <g 
+                    transform="translate(0, 0)"
+                    style={{ transition: 'all 0.3s' }}
+                >
+                    {/* Torso */}
+                    <path 
+                        d="M-8,10 Q0,-2 8,10" 
+                        fill="none" 
+                        stroke={isLocked ? "white" : "rgba(255,255,255,0.6)"} 
+                        strokeWidth="3" 
+                        strokeLinecap="round" 
+                    />
+                    {/* Head */}
+                    <circle 
+                        cx="0" 
+                        cy="0" 
+                        r="5" 
+                        fill={isLocked ? "white" : "rgba(255,255,255,0.6)"} 
+                    />
+                    {/* Optional lock indicator */}
+                    {isLocked && (
+                        <circle cx="6" cy="6" r="3" fill="var(--accent)" stroke="white" strokeWidth="1" />
+                    )}
+                </g>
+            )}
         </g>
     );
 };

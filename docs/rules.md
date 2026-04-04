@@ -125,7 +125,7 @@ There are five resources in the game:
 
 **8.2** Population grows automatically at the end of the turn when the city accumulates enough stored Food.
 
-**8.3** The Food required for population growth scales sequentially, requiring 2, 3, 5, 8, 13, etc., Food for each successive level.
+**8.3** The Food required for population growth scales sequentially, requiring 8, 13, 21, 34, 55, etc., Food for each successive level.
 
 **8.4** When a city's population grows, 80% (rounded down) of the city's currently stored Food is consumed as the cost of growth.
 

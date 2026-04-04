@@ -163,8 +163,8 @@ export function calculateTurnYield(state: GameState): Resources {
 }
 
 export function getFoodThresholdForNextPopulation(currentPopulation: number): number {
-    let a = 1;
-    let b = 1;
+    let a = 3;
+    let b = 5;
     for (let i = 0; i < currentPopulation; i++) {
         const temp = a + b;
         a = b;

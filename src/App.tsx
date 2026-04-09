@@ -106,6 +106,7 @@ function App() {
           state={gameState} 
           onClose={() => setView('map')}
           onBuild={(buildingId) => setGameState(prev => buildBuilding(prev, buildingId))}
+          onToggleWorker={(tileId) => setGameState(prev => toggleWorkedTile(prev, tileId))}
         />
       )}
     </div>

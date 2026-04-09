@@ -1,13 +1,19 @@
 import { AVAILABLE_BUILDINGS } from '../../state/GameState';
-import type { GameState } from '../../state/GameState';
+import type { GameState, Tile } from '../../state/GameState';
+import { HexMap } from '../Map/HexMap';
 
 interface CityViewProps {
     state: GameState;
     onBuild: (buildingId: string) => void;
+    onToggleWorker: (tileId: string) => void;
     onClose: () => void;
 }
 
-export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onClose }) => {
+export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onToggleWorker, onClose }) => {
+    const handleTileClick = (tile: Tile) => {
+        onToggleWorker(tile.id);
+    };
+
     return (
         <div style={{
             position: 'absolute',
@@ -31,7 +37,7 @@ export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onClose }) =
                     >Back to Map</button>
                 </div>
 
-                <div style={{ display: 'flex', gap: '30px', flex: 1, overflow: 'hidden' }}>
+                <div style={{ display: 'flex', gap: '20px', flex: 1, overflow: 'hidden' }}>
                     {/* Left: Built Structures and Status */}
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '20px', overflowY: 'auto' }}>
                         <div className="glass-panel" style={{ padding: '20px', background: 'rgba(0,0,0,0.3)' }}>
@@ -50,6 +56,24 @@ export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onClose }) =
                                     })}
                                 </ul>
                             )}
+                        </div>
+                    </div>
+
+                    {/* Center: Map */}
+                    <div style={{ flex: 2, display: 'flex', flexDirection: 'column', gap: '20px', minHeight: 0 }}>
+                        <div className="glass-panel" style={{ padding: '20px', background: 'rgba(0,0,0,0.3)', flex: 1, overflow: 'hidden' }}>
+                            <h3>Citizen Assignment</h3>
+                            <div style={{ height: 'calc(100% - 50px)', marginTop: '10px' }}>
+                                <HexMap
+                                    tiles={state.map}
+                                    culture={state.city.resources.culture}
+                                    population={state.city.population}
+                                    workedTileIds={state.city.workedTileIds}
+                                    lockedTileIds={state.city.lockedTileIds}
+                                    onTileClick={handleTileClick}
+                                    hexSize={30}
+                                />
+                            </div>
                         </div>
                     </div>
 

@@ -11,12 +11,13 @@ interface HexMapProps {
     lockedTileIds?: string[];
     onTileClick: (tile: Tile) => void;
     selectedTileId?: string;
+    hexSize?: number;
 }
 
 export const HexMap: React.FC<HexMapProps> = ({ 
-    tiles, culture, population, workedTileIds = [], lockedTileIds = [], onTileClick, selectedTileId 
+    tiles, culture, population, workedTileIds = [], lockedTileIds = [], onTileClick, selectedTileId, hexSize = 50
 }) => {
-    const size = 50; // Radius of a hex
+    const size = hexSize;
 
     // We can compute bounds of the map to center the SVG
     let minX = 0, maxX = 0, minY = 0, maxY = 0;

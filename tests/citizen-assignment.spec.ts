@@ -52,13 +52,6 @@ test.describe('Citizen Assignment', () => {
     // Initially pop 1. City center is worked. Total workers = 1.
     // We need to find a tile that is CLAIMED (within radius) but UNWORKED.
     // Claimed tiles have opacity 1 in our CSS-in-JS.
-    const claimedUnworkedTile = page.getByTestId('hex-tile')
-        .filter({ hasNot: page.getByTestId('worker-head') })
-        .filter({ hasNot: page.locator('path[fill="var(--accent)"]') })
-        .filter({ has: page.locator('polygon[style*="opacity: 1"]') }) // Wait, opacity is on the <g>
-        .first();
-    
-    // Actually, let's just use the style of the g itself
     const unworkedInRadius = page.locator('g.hex-tile[style*="opacity: 1"]')
         .filter({ hasNot: page.getByTestId('worker-head') })
         .filter({ hasNot: page.locator('path[fill="var(--accent)"]') })
@@ -70,5 +63,69 @@ test.describe('Citizen Assignment', () => {
     await expect(toggleButton).toHaveText('Assign Citizen');
     await expect(toggleButton).toBeDisabled();
     await expect(page.locator('text=Population limit reached!')).toBeVisible();
+  });
+
+  test('should assign citizen from City View map', async ({ page }) => {
+    // 1. Open City View
+    await page.getByRole('button', { name: 'City View' }).click();
+    
+    // 2. Verify City View is open with Citizen Assignment panel
+    await expect(page.getByRole('heading', { name: 'Citizen Assignment' })).toBeVisible();
+    
+    // 3. Advance turns to gain population
+    await page.getByRole('button', { name: 'Back to Map' }).click();
+    const nextTurnButton = page.getByRole('button', { name: 'Next Turn' });
+    await nextTurnButton.click();
+    await nextTurnButton.click();
+    
+    // 4. Open City View again
+    await page.getByRole('button', { name: 'City View' }).click();
+    
+    // 5. Find a worker icon on the City View map (should be visible due to auto-assignment)
+    // The City View map is inside a different container
+    const cityViewMap = page.locator('.glass-panel').filter({ has: page.getByRole('heading', { name: 'Citizen Assignment' }) });
+    
+    // Find an unworked tile in City View (opacity 1 but no worker)
+    const unworkedTile = cityViewMap.locator('g.hex-tile[style*="opacity: 1"]')
+        .filter({ hasNot: page.locator('path[fill="var(--accent)"]') })
+        .filter({ hasNot: page.getByTestId('worker-head') })
+        .first();
+    
+    const tileId = await unworkedTile.getAttribute('data-tile-id');
+    
+    // 6. Click to assign citizen
+    await unworkedTile.locator('polygon').click({ force: true });
+    
+    // 7. Verify worker icon appears on the tile
+    const workedTile = cityViewMap.locator(`g[data-tile-id="${tileId}"]`);
+    await expect(workedTile.getByTestId('worker-head')).toBeVisible();
+  });
+
+  test('should unassign citizen from City View map', async ({ page }) => {
+    // 1. Advance turns to gain population and auto-assign citizens
+    const nextTurnButton = page.getByRole('button', { name: 'Next Turn' });
+    await nextTurnButton.click();
+    await nextTurnButton.click();
+    
+    // 2. Open City View
+    await page.getByRole('button', { name: 'City View' }).click();
+    
+    // 3. Find the City View map container
+    const cityViewMap = page.locator('.glass-panel').filter({ has: page.getByRole('heading', { name: 'Citizen Assignment' }) });
+    
+    // 4. Find a worked tile (not city center)
+    const workedTile = cityViewMap.locator('g.hex-tile[style*="opacity: 1"]')
+        .filter({ has: page.getByTestId('worker-head') })
+        .filter({ hasNot: page.locator('path[fill="var(--accent)"]') })
+        .first();
+    
+    const tileId = await workedTile.getAttribute('data-tile-id');
+    
+    // 5. Click to unassign citizen
+    await workedTile.locator('polygon').click({ force: true });
+    
+    // 6. Verify worker icon is removed
+    const tileAfter = cityViewMap.locator(`g[data-tile-id="${tileId}"]`);
+    await expect(tileAfter.getByTestId('worker-head')).not.toBeVisible();
   });
 });

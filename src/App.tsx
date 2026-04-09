@@ -27,7 +27,13 @@ function App() {
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}
           lockedTileIds={gameState.city.lockedTileIds}
-          onTileClick={(tile) => setSelectedTileId(tile.id)} 
+          onTileClick={(tile) => {
+            if (showCityPanels) {
+              setGameState(prev => toggleWorkedTile(prev, tile.id));
+            } else {
+              setSelectedTileId(tile.id);
+            }
+          }} 
           selectedTileId={selectedTileId} 
         />
       </div>

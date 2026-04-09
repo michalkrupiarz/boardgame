@@ -1,55 +1,66 @@
 ## Context
 
-Currently, the City View (`CityView.tsx`) shows building infrastructure and a build menu, but players must close it and return to the main map view to manage citizen assignments. This creates a jarring workflow where players cannot coordinate building construction with citizen tile placement in one session.
-
-The `HexMap` component already exists and renders the full hexagonal grid with all tile interactions (click to select, worked/locked indicators, radius highlighting). The same component can be reused within City View.
+The original approach embedded the HexMap inside the City View modal, which caused the map to be squeezed and tiles to overlap due to space constraints. The new approach uses overlay side panels that don't interfere with the main map display.
 
 ## Goals / Non-Goals
 
 **Goals:**
-- Display a scaled-down hexagonal map within City View
-- Enable click-to-assign citizen functionality on tiles within cultural radius
-- Show worked tiles, locked citizens, and visual indicators
-- Provide a cohesive city management experience
+- Display city management tools without obscuring the map
+- Provide quick access to Infrastructure and Buildings panels
+- Enable citizen assignment directly on the map
+- Maintain full map visibility for strategic planning
 
 **Non-Goals:**
-- Full map navigation (pan/zoom) within City View - use a centered, bounded view
-- Modifying map state (exploration, terrain) from City View
-- Re-implementing existing HexMap - reuse the component
+- Embedding map within city panels (causes crowding)
+- Multiple view modes (map vs city)
+- Complex panel resizing/dragging
 
 ## Decisions
 
-### Decision 1: Reuse HexMap vs Create City-Specific Map
-**Chosen:** Reuse `HexMap` component with adapted props
+### Decision 1: Side Panels vs Modal
+**Chosen:** Side panels overlay
 
-**Rationale:** The existing `HexMap` already handles:
-- Hex grid rendering with axial coordinates
-- Radius-based visual styling
-- Tile click handling
-- Worker/locked indicators
+**Rationale:** 
+- Map remains fully visible and interactive
+- No modal to open/close - just toggle panels
+- Less intrusive to gameplay flow
+- Easier to quickly check resources while panning map
 
-Creating a separate map would duplicate rendering logic. Instead, pass a bounded set of tiles and handle clicks in CityView.
+### Decision 2: Panel Layout
+**Chosen:** Left panel (Infrastructure + Citizen Info), Right panel (Buildings)
 
-### Decision 2: Layout Approach
-**Chosen:** Three-column layout (Infrastructure | Map | Buildings)
+**Rationale:**
+- Symmetrical layout
+- Natural reading order (left to right for building)
+- Infrastructure/Status on left (informational)
+- Actions on right (building)
 
-**Rationale:** Places the map as the central focus while keeping building management accessible. Mirrors the existing City View's left/right split but inserts the map as a middle column.
+### Decision 3: Panel Positioning
+**Chosen:** Fixed position with glass effect background
 
-### Decision 3: Tile Interaction in City View
-**Chosen:** Single-click to toggle citizen assignment (same as map view)
+**Rationale:**
+- Consistent placement
+- Glass effect doesn't fully block map tiles underneath
+- Sufficient contrast for readability
 
-**Rationale:** Consistency with existing interaction pattern. Players shouldn't need to learn new mechanics.
+## Layout
 
-### Decision 4: Map Bounds
-**Chosen:** Show all tiles within current + 1 radius visually, but only allow interaction within current radius
+```
++---------------------------+
+|  [HUD: Resources, Turn]   |
++---+                   +---+
+| L |                   | R |
+| E |                   | I |
+| F |    MAIN MAP       | G |
+| T |    (full view)    | H |
+|   |                   | T |
+| P |                   |   |
+| A |                   | P |
+| N |                   | A |
+| E |                   | N |
+| L |                   | E |
++---+                   +---+
+```
 
-**Rationale:** Shows upcoming expansion potential without allowing premature assignment. Dim tiles outside radius to indicate they're unavailable.
-
-## Risks / Trade-offs
-
-| Risk | Mitigation |
-|------|------------|
-| Performance: Large maps with many tiles | Use smaller hex size (30px vs 50px) for City View map |
-| State sync: Clicking tile in City View must update App state | Pass `toggleWorkedTile` handler through props |
-| Click propagation: Map layer clicks might interfere | Use `stopPropagation` or modal overlay isolation |
-| Responsive: Narrow screens may have layout issues | Stack vertically on small screens, map above panels |
+Left Panel (280px): Built Infrastructure + Citizen Assignment Info
+Right Panel (300px): Available Buildings with Build buttons

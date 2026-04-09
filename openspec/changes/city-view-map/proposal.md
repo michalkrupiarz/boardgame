@@ -1,25 +1,25 @@
 ## Why
 
-Currently, players must exit the City View to manage citizen assignments on the map. This interrupts the planning workflow and makes it harder to coordinate building construction with citizen placement. Integrating the map directly into the City View will create a seamless city management experience.
+Previously, managing city infrastructure required toggling between different views, disrupting the planning workflow. The new side panel approach allows players to access city management tools directly from the main map view without obscuring it.
 
 ## What Changes
 
-- **New integrated map panel** within City View showing the hexagonal map
-- **Clickable tile selection** in City View to assign/unassign citizens
-- **Visual feedback** showing worked tiles, locked citizens, and available citizens
-- **Radius indicator** showing current cultural expansion boundaries
-- **Tile yield preview** on hover in City View map panel
+- **Side panels** overlay on left (Infrastructure + Citizen Info) and right (Available Buildings)
+- **Main map remains visible** at all times - no modal blocking
+- **Toggle button** to show/hide city panels
+- **Citizen assignment** done directly on the map (no embedded map in panels)
+- **Building construction** accessible from side panel without leaving map
 
 ## Capabilities
 
 ### New Capabilities
-- `city-view-map`: Integrated map display within City View enabling citizen assignment without leaving the city management screen.
+- `city-side-panels`: Overlay panels that display city management tools while keeping the map visible.
 
 ### Modified Capabilities
 - (none)
 
 ## Impact
 
-- **UI Components**: `CityView.tsx` will include the HexMap component
-- **User Flow**: Players can manage buildings AND citizen assignments in one view
-- **State Management**: May need additional UI state for City View-specific map interactions
+- **UI Components**: `CityView.tsx` renamed to `CitySidePanel`, App.tsx updated for side panel toggle
+- **User Flow**: Players manage city and view map simultaneously
+- **State Management**: Simplified - no need to pass map state to CityView

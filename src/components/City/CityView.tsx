@@ -25,7 +25,7 @@ export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onToggleWork
             zIndex: 100,
             backdropFilter: 'blur(8px)',
         }}>
-            <div className="glass-panel" style={{ width: '80%', maxWidth: '900px', height: '80%', display: 'flex', flexDirection: 'column', padding: '30px' }}>
+            <div className="glass-panel" style={{ width: '90%', maxWidth: '1200px', height: '85%', display: 'flex', flexDirection: 'column', padding: '30px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                     <h2>{state.city.name} - City View</h2>
                     <button 
@@ -71,7 +71,7 @@ export const CityView: React.FC<CityViewProps> = ({ state, onBuild, onToggleWork
                                     workedTileIds={state.city.workedTileIds}
                                     lockedTileIds={state.city.lockedTileIds}
                                     onTileClick={handleTileClick}
-                                    hexSize={30}
+                                    hexSize={35}
                                 />
                             </div>
                         </div>

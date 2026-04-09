@@ -14,9 +14,9 @@ interface HexTileProps {
     onClick: (tile: Tile) => void;
 }
 
-// Derived for a hexagon fitting in 173.2 x 200 box
-// pointy top: width = sqrt(3)*size, height = 2*size.  with size = 100
-// w = 173.205, h = 200
+// pointy top hexagon: width = sqrt(3)*size, height = 2*size
+// Half widths and heights for polygon points
+// w = sqrt(3)/2 * size, h = size
 
 export const HexTile: React.FC<HexTileProps> = ({ 
     tile, size, isSelected, isClaimed, isCity, population, isWorked, isLocked, onClick 
@@ -24,6 +24,17 @@ export const HexTile: React.FC<HexTileProps> = ({
     // Axial to pixel coords (pointy top)
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
+
+    // Hexagon polygon points relative to center (pointy top)
+    // Top point at (0, -size), going clockwise
+    const w = (Math.sqrt(3) / 2) * size; // half width
+    const h = size; // half height
+    const points = `0,${-size} ${w},${-h/2} ${w},${h/2} 0,${size} ${-w},${h/2} ${-w},${-h/2}`;
+
+    // Worker icon scales with hex size
+    const iconScale = size / 50;
+    const headRadius = 5 * iconScale;
+    const strokeWidth = 3 * iconScale;
 
     // Define CSS variable colors depending on terrain
     const getFillColor = (terrain: TerrainType) => {
@@ -45,26 +56,25 @@ export const HexTile: React.FC<HexTileProps> = ({
             data-tile-id={tile.id}
         >
             <polygon 
-                points="0,50 43.3,25 86.6,50 86.6,100 43.3,125 0,100" 
+                points={points}
                 fill={getFillColor(tile.terrain)}
                 stroke="rgba(255,255,255,0.2)"
                 strokeWidth="2"
-                transform="translate(-43.3, -75)" // center the polygon at x,y
             />
             {isCity && (
                 <g>
                     <path 
-                        d="M-15,0 L0,-15 L15,0 L15,20 L-15,20 Z" 
+                        d={`M${-15 * iconScale},0 L0,${-15 * iconScale} L${15 * iconScale},0 L${15 * iconScale},${20 * iconScale} L${-15 * iconScale},${20 * iconScale} Z`}
                         fill="var(--accent)" 
                         stroke="white" 
-                        strokeWidth="2" 
+                        strokeWidth={2 * iconScale}
                     />
                     {population !== undefined && (
                         <text 
                             x="0" 
-                            y="14" 
+                            y={14 * iconScale} 
                             fill="white" 
-                            fontSize="14" 
+                            fontSize={14 * iconScale} 
                             fontWeight="bold" 
                             textAnchor="middle"
                             style={{ userSelect: 'none' }}
@@ -83,22 +93,22 @@ export const HexTile: React.FC<HexTileProps> = ({
                 >
                     {/* Torso */}
                     <path 
-                        d="M-8,10 Q0,-2 8,10" 
+                        d={`M${-8 * iconScale},${10 * iconScale} Q0,${-2 * iconScale} ${8 * iconScale},${10 * iconScale}`}
                         fill="none" 
                         stroke={isLocked ? "white" : "rgba(255,255,255,0.6)"} 
-                        strokeWidth="3" 
-                        strokeLinecap="round" 
+                        strokeWidth={strokeWidth}
+                        strokeLinecap="round"
                     />
                     {/* Head */}
                     <circle 
                         cx="0" 
                         cy="0" 
-                        r="5" 
+                        r={headRadius}
                         fill={isLocked ? "white" : "rgba(255,255,255,0.6)"} 
                     />
                     {/* Optional lock indicator */}
                     {isLocked && (
-                        <circle cx="6" cy="6" r="3" fill="var(--accent)" stroke="white" strokeWidth="1" />
+                        <circle cx={6 * iconScale} cy={6 * iconScale} r={3 * iconScale} fill="var(--accent)" stroke="white" strokeWidth={iconScale} />
                     )}
                 </g>
             )}

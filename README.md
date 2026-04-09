@@ -22,3 +22,16 @@ opsx-explore - ai will analyze proposal and refine it
 opsx-apply [change-name] will try to implement the change
 
 Deployment is on vercel use github account
+
+## Testing
+
+### E2E Testing (Playwright)
+To run all end-to-end tests:
+```bash
+npm run test:e2e
+```
+
+To view the last HTML report:
+```bash
+npm run test:e2e:report
+```

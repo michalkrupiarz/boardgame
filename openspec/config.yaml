@@ -49,7 +49,7 @@ context: |
        - Implementation phase (`/opsx-apply`): Commit codebase modifications.
        - Archival phase (`/opsx-archive`): Finalize and merge into `main`.
     3. Merging: Upon successful archival, the feature branch must be merged into the `main` branch.
-    4. Testing: One united report should be generated for all Playwright tests.
+    4. Testing: One united report should be generated for all Playwright tests. Every functional change MUST include E2E tests. If unsure about what to test, provide a list of candidate tests for decision.
 
 # Per-artifact rules (optional)
 # Add custom rules for specific artifacts.

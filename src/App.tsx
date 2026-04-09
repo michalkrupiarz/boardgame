@@ -3,13 +3,12 @@ import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWor
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
-import { CityView } from './components/City/CityView';
+import { CitySidePanel } from './components/City/CityView';
 
-// App component ties it all together
 function App() {
-  const [gameState, setGameState] = useState<GameState>(() => getInitialState(11)); // Map size 11 (approx 10x10)
+  const [gameState, setGameState] = useState<GameState>(() => getInitialState(11));
   const [selectedTileId, setSelectedTileId] = useState<string | undefined>();
-  const [view, setView] = useState<'map' | 'city'>('map');
+  const [showCityPanels, setShowCityPanels] = useState(false);
 
   const selectedTile = gameState.map.find(t => t.id === selectedTileId) || null;
 
@@ -21,7 +20,6 @@ function App() {
 
   return (
     <div className="app-container">
-      {/* Background Map Layer */}
       <div className="map-layer">
         <HexMap 
           tiles={gameState.map} 
@@ -34,9 +32,7 @@ function App() {
         />
       </div>
 
-      {/* UI Overlay Layer */}
       <div className="ui-layer">
-        {/* Top HUD */}
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px' }}>
           <div className="glass-panel" style={{ display: 'flex', gap: '20px', padding: '10px 20px', alignItems: 'center' }}>
             <div style={{ fontWeight: '600', marginRight: '10px' }}>Turn {gameState.turn}</div>
@@ -70,10 +66,10 @@ function App() {
           <div style={{ display: 'flex', gap: '15px' }}>
             <button 
               className="glass-panel"
-              style={{ padding: '0 20px', fontWeight: '600', color: 'white', background: 'var(--bg-panel)' }}
-              onClick={() => setView('city')}
+              style={{ padding: '0 20px', fontWeight: '600', color: 'white', background: showCityPanels ? 'var(--accent)' : 'var(--bg-panel)' }}
+              onClick={() => setShowCityPanels(!showCityPanels)}
             >
-              City View
+              {showCityPanels ? 'Close City' : 'City View'}
             </button>
             <button 
               className="glass-panel"
@@ -85,28 +81,23 @@ function App() {
           </div>
         </div>
 
-        {/* Selected Tile Info Panel */}
-        {view === 'map' && selectedTile && (
-            <TileInfoPanel 
-                tile={selectedTile} 
-                culture={gameState.city.resources.culture}
-                isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
-                isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
-                canAssign={gameState.city.workedTileIds.length < gameState.city.population}
-                onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
-                onClose={() => setSelectedTileId(undefined)} 
-            />
+        {selectedTile && !showCityPanels && (
+          <TileInfoPanel 
+            tile={selectedTile} 
+            culture={gameState.city.resources.culture}
+            isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
+            isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
+            canAssign={gameState.city.workedTileIds.length < gameState.city.population}
+            onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
+            onClose={() => setSelectedTileId(undefined)} 
+          />
         )}
-
       </div>
 
-      {/* Fullscreen Overlays */}
-      {view === 'city' && (
-        <CityView 
+      {showCityPanels && (
+        <CitySidePanel 
           state={gameState} 
-          onClose={() => setView('map')}
           onBuild={(buildingId) => setGameState(prev => buildBuilding(prev, buildingId))}
-          onToggleWorker={(tileId) => setGameState(prev => toggleWorkedTile(prev, tileId))}
         />
       )}
     </div>

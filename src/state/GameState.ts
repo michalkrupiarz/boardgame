@@ -258,7 +258,7 @@ export function getFoodThresholdForNextPopulation(currentPopulation: number): nu
 export function nextTurn(state: GameState): GameState {
     const yields = calculateTurnYield(state);
     
-    let newCulture = state.city.resources.culture + yields.culture;
+    const newCulture = state.city.resources.culture + yields.culture;
     let newFood = state.city.resources.food + yields.food;
     let newPopulation = state.city.population;
     let threshold = getFoodThresholdForNextPopulation(newPopulation);

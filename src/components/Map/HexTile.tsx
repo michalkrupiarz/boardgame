@@ -58,9 +58,14 @@ export const HexTile: React.FC<HexTileProps> = ({
             data-testid="hex-tile"
             data-tile-id={tile.id}
         >
+            <defs>
+                <pattern id={`stripe-${tile.id}`} patternUnits="userSpaceOnUse" width="8" height="8" patternTransform="rotate(45)">
+                    <line x1="0" y1="0" x2="0" y2="8" stroke="#ec4899" strokeWidth="4" />
+                </pattern>
+            </defs>
             <polygon 
                 points={points}
-                fill={getFillColor(tile.terrain)}
+                fill={isTargetClaim ? `url(#stripe-${tile.id})` : getFillColor(tile.terrain)}
                 stroke={strokeStyle.stroke}
                 strokeWidth={strokeStyle.strokeWidth}
                 strokeDasharray={strokeStyle.strokeDasharray}

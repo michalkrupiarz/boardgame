@@ -38,14 +38,17 @@ export interface Building {
     name: string;
     cost: number;
     bonuses: Partial<TerrainModifiers>;
+    upkeep?: number;
+    percentageBonus?: Partial<Record<keyof Resources, number>>;
 }
 
 export const AVAILABLE_BUILDINGS: Building[] = [
-    { id: 'farm', name: 'Farm', cost: 20, bonuses: { food: 2 } },
-    { id: 'mine', name: 'Mine', cost: 30, bonuses: { production: 2 } },
-    { id: 'market', name: 'Market', cost: 40, bonuses: { gold: 3 } },
-    { id: 'library', name: 'Library', cost: 50, bonuses: { science: 2 } },
-    { id: 'monument', name: 'Monument', cost: 25, bonuses: { culture: 2 } },
+    { id: 'granary', name: 'Granary', cost: 200, bonuses: { food: 0 }, percentageBonus: { food: 0.2 } },
+    { id: 'cemetery', name: 'Cemetery', cost: 100, bonuses: { culture: 1 } },
+    { id: 'obelisk', name: 'Obelisk', cost: 100, bonuses: { culture: 1 } },
+    { id: 'market', name: 'Market', cost: 300, bonuses: {}, percentageBonus: { gold: 0.2 } },
+    { id: 'library', name: 'Library', cost: 400, bonuses: {}, percentageBonus: { science: 0.2 }, upkeep: 1 },
+    { id: 'guardhouse', name: 'Guardhouse', cost: 500, bonuses: {}, percentageBonus: { production: 0.05, science: 0.05, gold: 0.05 }, upkeep: 2 },
 ];
 
 export interface City {
@@ -209,7 +212,7 @@ export function getTileYieldSum(tile: Tile): number {
 
 // Calculates the per-turn yield based on city buildings and mapped tile radius.
 export function calculateTurnYield(state: GameState): Resources {
-    const yieldResources: Resources = {
+    const baseYields: Resources = {
         gold: 0, production: 0, food: 0, culture: 0, science: 0
     };
 
@@ -218,30 +221,70 @@ export function calculateTurnYield(state: GameState): Resources {
         const isCityCenter = tile.q === 0 && tile.r === 0;
         const isWorked = state.city.workedTileIds.includes(tile.id);
         
-        // Only harvest if it's the city center OR a worked tile
         if (tile.isExplored && (isCityCenter || isWorked)) {
             const bonuses = terrainBonuses[tile.terrain];
-            yieldResources.gold += bonuses.gold;
-            yieldResources.production += bonuses.production;
-            yieldResources.food += bonuses.food;
-            yieldResources.culture += bonuses.culture;
-            yieldResources.science += bonuses.science;
+            baseYields.gold += bonuses.gold;
+            baseYields.production += bonuses.production;
+            baseYields.food += bonuses.food;
+            baseYields.culture += bonuses.culture;
+            baseYields.science += bonuses.science;
         }
     }
 
-    // Add building yields
+    // Calculate flat bonuses from buildings
+    const flatBonuses: Resources = {
+        gold: 0, production: 0, food: 0, culture: 0, science: 0
+    };
+    const percentageBonuses: Resources = {
+        gold: 1, production: 1, food: 1, culture: 1, science: 1
+    };
+    let totalUpkeep = 0;
+
     for (const buildingId of state.city.buildings) {
         const building = AVAILABLE_BUILDINGS.find(b => b.id === buildingId);
         if (building) {
-            yieldResources.gold += building.bonuses.gold || 0;
-            yieldResources.production += building.bonuses.production || 0;
-            yieldResources.food += building.bonuses.food || 0;
-            yieldResources.culture += building.bonuses.culture || 0;
-            yieldResources.science += building.bonuses.science || 0;
+            flatBonuses.gold += building.bonuses.gold || 0;
+            flatBonuses.production += building.bonuses.production || 0;
+            flatBonuses.food += building.bonuses.food || 0;
+            flatBonuses.culture += building.bonuses.culture || 0;
+            flatBonuses.science += building.bonuses.science || 0;
+            
+            if (building.percentageBonus) {
+                if (building.percentageBonus.gold) {
+                    percentageBonuses.gold += building.percentageBonus.gold;
+                }
+                if (building.percentageBonus.production) {
+                    percentageBonuses.production += building.percentageBonus.production;
+                }
+                if (building.percentageBonus.food) {
+                    percentageBonuses.food += building.percentageBonus.food;
+                }
+                if (building.percentageBonus.science) {
+                    percentageBonuses.science += building.percentageBonus.science;
+                }
+            }
+            
+            totalUpkeep += building.upkeep || 0;
         }
     }
 
+    // Apply flat bonuses then percentage bonuses
+    const yieldResources: Resources = {
+        gold: Math.floor((baseYields.gold + flatBonuses.gold) * percentageBonuses.gold),
+        production: Math.floor((baseYields.production + flatBonuses.production) * percentageBonuses.production),
+        food: Math.floor((baseYields.food + flatBonuses.food) * percentageBonuses.food),
+        culture: baseYields.culture + flatBonuses.culture,
+        science: Math.floor((baseYields.science + flatBonuses.science) * percentageBonuses.science),
+    };
+
+    // Deduct upkeep (affects gold)
+    yieldResources.gold = Math.max(0, yieldResources.gold - totalUpkeep);
+
     return yieldResources;
+}
+
+export function hasBuilding(state: GameState, buildingId: string): boolean {
+    return state.city.buildings.includes(buildingId);
 }
 
 export function getFoodThresholdForNextPopulation(currentPopulation: number): number {
@@ -261,13 +304,14 @@ export function nextTurn(state: GameState): GameState {
     const newCulture = state.city.resources.culture + yields.culture;
     let newFood = state.city.resources.food + yields.food;
     let newPopulation = state.city.population;
-    let threshold = getFoodThresholdForNextPopulation(newPopulation);
+    const hasGranary = hasBuilding(state, 'granary');
+    const granaryRetention = hasGranary ? 0.8 : 1.0;
 
-    while (newFood >= threshold) {
+    while (newFood >= getFoodThresholdForNextPopulation(newPopulation)) {
         newPopulation += 1;
-        const consumed = Math.floor(newFood * 0.8);
+        const threshold = getFoodThresholdForNextPopulation(newPopulation - 1);
+        const consumed = Math.floor(threshold * granaryRetention);
         newFood -= consumed;
-        threshold = getFoodThresholdForNextPopulation(newPopulation);
     }
 
     let newState: GameState = {

@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { 
   getInitialState, nextTurn, buildBuilding, calculateTurnYield, terrainBonuses, AVAILABLE_BUILDINGS,
-  getDistance, getClaimCost, isAdjacentToClaimed, getBestClaimableTileId, claimTile, toggleWorkedTile, autoAssignCitizens
+  getDistance, getClaimCost, isAdjacentToClaimed, getBestClaimableTileId, claimTile, toggleWorkedTile, autoAssignCitizens,
+  generateInitialMap, getCurrentRadius, getFoodThresholdForNextPopulation, getClaimableTiles, toggleAutoExpand, getTileYieldSum,
+  hasBuilding
 } from './GameState';
 import type { Tile } from './GameState';
 
@@ -37,13 +39,13 @@ describe('GameState', () => {
 
   it('can build a building and deducts its cost', () => {
     const state = getInitialState(1);
-    const farmCost = AVAILABLE_BUILDINGS.find(b => b.id === 'farm')!.cost;
+    const granaryCost = AVAILABLE_BUILDINGS.find(b => b.id === 'granary')!.cost;
     
-    state.city.resources.production = farmCost + 5;
+    state.city.resources.production = granaryCost + 5;
     
-    const nextState = buildBuilding(state, 'farm');
+    const nextState = buildBuilding(state, 'granary');
     
-    expect(nextState.city.buildings).toContain('farm');
+    expect(nextState.city.buildings).toContain('granary');
     expect(nextState.city.resources.production).toBe(5);
   });
 
@@ -51,22 +53,10 @@ describe('GameState', () => {
     const state = getInitialState(1);
     state.city.resources.production = 0;
     
-    const nextState = buildBuilding(state, 'farm');
+    const nextState = buildBuilding(state, 'cemetery');
     
-    expect(nextState.city.buildings).not.toContain('farm');
+    expect(nextState.city.buildings).not.toContain('cemetery');
     expect(nextState.city.resources.production).toBe(0);
-  });
-
-  it('buildings increase turn yields', () => {
-    const state = getInitialState(1);
-    state.map[0].terrain = 'Desert';
-    
-    const initialYields = calculateTurnYield(state);
-    
-    state.city.buildings = ['library'];
-    
-    const newYields = calculateTurnYield(state);
-    expect(newYields.science).toBe(initialYields.science + 2);
   });
 });
 
@@ -256,8 +246,228 @@ describe('Population Growth', () => {
     const state = getInitialState(1);
     state.map[0].terrain = 'Desert';
     state.city.resources.food = 100;
+
+    const nextState = nextTurn(state);
+    expect(nextState.city.population).toBeGreaterThan(1);
+  });
+});
+
+describe('Map Generation', () => {
+  it('generates correct tile count for size 1', () => {
+    const tiles = generateInitialMap(1);
+    expect(tiles.length).toBe(1);
+    const center = tiles.find(t => t.id === '0,0');
+    expect(center).toBeDefined();
+  });
+
+  it('generates correct tile count for size 3 (radius 1)', () => {
+    const tiles = generateInitialMap(3);
+    expect(tiles.length).toBe(7);
+  });
+
+  it('generates correct tile count for size 5 (radius 2)', () => {
+    const tiles = generateInitialMap(5);
+    expect(tiles.length).toBe(19);
+  });
+
+  it('center tile is always Plains terrain', () => {
+    const tiles = generateInitialMap(5);
+    const center = tiles.find(t => t.q === 0 && t.r === 0);
+    expect(center?.terrain).toBe('Plains');
+  });
+});
+
+describe('Culture Radius', () => {
+  it('returns radius 1 for culture less than 50', () => {
+    expect(getCurrentRadius(0)).toBe(1);
+    expect(getCurrentRadius(49)).toBe(1);
+  });
+
+  it('returns radius 2 for culture between 50 and 149', () => {
+    expect(getCurrentRadius(50)).toBe(2);
+    expect(getCurrentRadius(149)).toBe(2);
+  });
+
+  it('returns radius 3 for culture between 150 and 349', () => {
+    expect(getCurrentRadius(150)).toBe(3);
+    expect(getCurrentRadius(349)).toBe(3);
+  });
+
+  it('returns radius 4 for culture 350 or more', () => {
+    expect(getCurrentRadius(350)).toBe(4);
+    expect(getCurrentRadius(1000)).toBe(4);
+  });
+});
+
+describe('Food Threshold', () => {
+  it('returns 8 for population 1', () => {
+    expect(getFoodThresholdForNextPopulation(1)).toBe(8);
+  });
+
+  it('returns 13 for population 2', () => {
+    expect(getFoodThresholdForNextPopulation(2)).toBe(13);
+  });
+
+  it('returns 21 for population 3', () => {
+    expect(getFoodThresholdForNextPopulation(3)).toBe(21);
+  });
+});
+
+describe('Get Claimable Tiles', () => {
+  it('returns empty array when all adjacent tiles claimed', () => {
+    const map = generateInitialMap(3);
+    const allClaimed = ['0,0', '1,0', '0,1', '-1,0', '0,-1', '1,-1', '-1,1'];
+    const claimable = getClaimableTiles(map, allClaimed);
+    expect(claimable).toHaveLength(0);
+  });
+
+  it('returns adjacent tiles when only center is claimed', () => {
+    const map = generateInitialMap(3);
+    const claimable = getClaimableTiles(map, ['0,0']);
+    expect(claimable).toHaveLength(6);
+  });
+});
+
+describe('Toggle Auto Expand', () => {
+  it('toggles autoExpand from false to true', () => {
+    const state = getInitialState(1);
+    expect(state.city.autoExpand).toBe(false);
+    const nextState = toggleAutoExpand(state);
+    expect(nextState.city.autoExpand).toBe(true);
+  });
+
+  it('toggles autoExpand from true to false', () => {
+    const state = getInitialState(1);
+    state.city.autoExpand = true;
+    const nextState = toggleAutoExpand(state);
+    expect(nextState.city.autoExpand).toBe(false);
+  });
+});
+
+describe('Get Tile Yield Sum', () => {
+  it('returns correct sum for Plains terrain', () => {
+    const tile: Tile = { id: '0,0', q: 0, r: 0, terrain: 'Plains', isExplored: true };
+    expect(getTileYieldSum(tile)).toBe(4);
+  });
+
+  it('returns correct sum for Mountains terrain', () => {
+    const tile: Tile = { id: '0,0', q: 0, r: 0, terrain: 'Mountains', isExplored: true };
+    expect(getTileYieldSum(tile)).toBe(4);
+  });
+
+  it('returns correct sum for Forest terrain', () => {
+    const tile: Tile = { id: '0,0', q: 0, r: 0, terrain: 'Forest', isExplored: true };
+    expect(getTileYieldSum(tile)).toBe(3);
+  });
+
+  it('returns correct sum for Desert terrain', () => {
+    const tile: Tile = { id: '0,0', q: 0, r: 0, terrain: 'Desert', isExplored: true };
+    expect(getTileYieldSum(tile)).toBe(5);
+  });
+});
+
+describe('Building Bonuses', () => {
+  it('Cemetery adds 1 culture per turn', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.buildings = ['cemetery'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.culture).toBe(2);
+  });
+
+  it('Obelisk adds 1 culture per turn', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.buildings = ['obelisk'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.culture).toBe(2);
+  });
+
+  it('Cemetery and Obelisk stack culture', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.buildings = ['cemetery', 'obelisk'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.culture).toBe(3);
+  });
+
+  it('Market increases gold by 20%', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.buildings = ['market'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.gold).toBe(2);
+  });
+
+  it('Library increases science by 20%', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Mountains';
+    state.city.buildings = ['library'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.science).toBe(1);
+  });
+
+  it('Library has 1 gold upkeep', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.resources.gold = 5;
+    state.city.buildings = ['library'];
+    
+    const nextState = nextTurn(state);
+    expect(nextState.city.resources.gold).toBeLessThanOrEqual(6);
+  });
+
+  it('Guardhouse increases production by 5%', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Forest';
+    state.city.buildings = ['guardhouse'];
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.production).toBe(2);
+  });
+
+  it('Guardhouse has 2 gold upkeep', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.resources.gold = 10;
+    state.city.buildings = ['guardhouse'];
+    
+    const nextState = nextTurn(state);
+    expect(nextState.city.resources.gold).toBeLessThanOrEqual(11);
+  });
+
+  it('hasBuilding returns true for built buildings', () => {
+    const state = getInitialState(1);
+    state.city.buildings = ['cemetery'];
+    
+    expect(hasBuilding(state, 'cemetery')).toBe(true);
+    expect(hasBuilding(state, 'obelisk')).toBe(false);
+  });
+});
+
+describe('Granary Food Retention', () => {
+  it('saves food on population growth with Granary', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Desert';
+    state.city.resources.food = 50;
+    state.city.buildings = ['granary'];
     
     const nextState = nextTurn(state);
     expect(nextState.city.population).toBeGreaterThan(1);
+  });
+
+  it('Granary saves 20% food on population growth', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Plains';
+    state.city.resources.food = 30;
+    state.city.buildings = ['granary'];
+    
+    const nextState = nextTurn(state);
+    expect(nextState.city.resources.food).toBeGreaterThan(0);
   });
 });

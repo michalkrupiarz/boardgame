@@ -7,6 +7,24 @@ interface CitySidePanelProps {
     onToggleWorker?: (tileId: string) => void;
 }
 
+function getBuildingDescription(building: typeof AVAILABLE_BUILDINGS[0]): string {
+    const parts: string[] = [];
+    
+    if (building.bonuses.culture) parts.push(`+${building.bonuses.culture} Culture`);
+    if (building.bonuses.food) parts.push(`+${building.bonuses.food} Food`);
+    
+    if (building.percentageBonus) {
+        if (building.percentageBonus.gold) parts.push(`+${Math.round(building.percentageBonus.gold * 100)}% Gold`);
+        if (building.percentageBonus.production) parts.push(`+${Math.round(building.percentageBonus.production * 100)}% Production`);
+        if (building.percentageBonus.science) parts.push(`+${Math.round(building.percentageBonus.science * 100)}% Science`);
+        if (building.percentageBonus.food) parts.push(`+${Math.round(building.percentageBonus.food * 100)}% Food (pop growth)`);
+    }
+    
+    if (building.upkeep) parts.push(`-${building.upkeep} Gold upkeep`);
+    
+    return parts.join(', ') || 'No bonuses';
+}
+
 export const CitySidePanel: React.FC<CitySidePanelProps> = ({ state, onBuild }) => {
     return (
         <>
@@ -32,7 +50,10 @@ export const CitySidePanel: React.FC<CitySidePanelProps> = ({ state, onBuild }) 
                                 const b = AVAILABLE_BUILDINGS.find(b => b.id === id);
                                 return (
                                     <li key={index} style={{ padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
-                                        {b?.name}
+                                        <div style={{ fontWeight: '600' }}>{b?.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                                            {b ? getBuildingDescription(b) : ''}
+                                        </div>
                                     </li>
                                 );
                             })}
@@ -58,7 +79,7 @@ export const CitySidePanel: React.FC<CitySidePanelProps> = ({ state, onBuild }) 
                 position: 'absolute',
                 top: '100px',
                 right: '20px',
-                width: '300px',
+                width: '320px',
                 maxHeight: 'calc(100vh - 160px)',
                 zIndex: 50,
                 display: 'flex',
@@ -77,8 +98,12 @@ export const CitySidePanel: React.FC<CitySidePanelProps> = ({ state, onBuild }) 
                                 }}>
                                     <div>
                                         <div style={{ fontWeight: '600', marginBottom: '4px' }}>{building.name}</div>
-                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
-                                            Cost: <span className="text-production">{building.cost} Prod</span>
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>
+                                            <span className="text-production">{building.cost} Prod</span>
+                                            {building.upkeep && <span> | <span className="text-gold">-{building.upkeep} Gold/turn</span></span>}
+                                        </div>
+                                        <div style={{ fontSize: '0.7rem', color: '#a855f7', marginTop: '4px' }}>
+                                            {getBuildingDescription(building)}
                                         </div>
                                     </div>
                                     <button 

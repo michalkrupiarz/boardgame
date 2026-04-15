@@ -8,6 +8,7 @@ interface HexTileProps {
     isSelected: boolean;
     isClaimed: boolean;
     isClaimable?: boolean;
+    showClaimable?: boolean;
     isCity: boolean;
     population?: number;
     isWorked?: boolean;
@@ -16,8 +17,9 @@ interface HexTileProps {
 }
 
 export const HexTile: React.FC<HexTileProps> = ({ 
-    tile, size, isSelected, isClaimed, isClaimable, isCity, population, isWorked, isLocked, onClick 
+    tile, size, isSelected, isClaimed, isClaimable, showClaimable, isCity, population, isWorked, isLocked, onClick 
 }) => {
+    const canBeClaimed = isClaimable && showClaimable;
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
 
@@ -39,9 +41,9 @@ export const HexTile: React.FC<HexTileProps> = ({
     };
 
     const getStrokeStyle = () => {
-        if (isClaimed) return { stroke: 'rgba(255,255,255,0.4)', strokeWidth: 3 };
-        if (isClaimable) return { stroke: 'var(--accent)', strokeWidth: 3, strokeDasharray: '8,4' };
-        return { stroke: 'rgba(255,255,255,0.2)', strokeWidth: 2 };
+        if (isClaimed) return { stroke: 'rgba(255,255,255,0.4)', strokeWidth: 3, strokeDasharray: 'none' };
+        if (canBeClaimed) return { stroke: '#ec4899', strokeWidth: 4, strokeDasharray: '8,4' };
+        return { stroke: 'rgba(255,255,255,0.2)', strokeWidth: 2, strokeDasharray: 'none' };
     };
 
     const strokeStyle = getStrokeStyle();
@@ -50,7 +52,7 @@ export const HexTile: React.FC<HexTileProps> = ({
         <g 
             transform={`translate(${x}, ${y})`} 
             className={`hex-tile ${isSelected ? 'selected' : ''}`}
-            style={{ opacity: isClaimed || isClaimable ? 1 : 0.3 }}
+            style={{ opacity: isClaimed || canBeClaimed ? 1 : 0.3 }}
             onClick={() => onClick(tile)}
             data-testid="hex-tile"
             data-tile-id={tile.id}
@@ -60,7 +62,7 @@ export const HexTile: React.FC<HexTileProps> = ({
                 fill={getFillColor(tile.terrain)}
                 stroke={strokeStyle.stroke}
                 strokeWidth={strokeStyle.strokeWidth}
-                strokeDasharray={isClaimable ? '8,4' : 'none'}
+                strokeDasharray={strokeStyle.strokeDasharray}
             />
             {isCity && (
                 <g>

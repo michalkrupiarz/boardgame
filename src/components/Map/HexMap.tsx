@@ -6,6 +6,7 @@ import { HexTile } from './HexTile';
 interface HexMapProps {
     tiles: Tile[];
     claimedTileIds: string[];
+    showClaimable?: boolean;
     population?: number;
     workedTileIds?: string[];
     lockedTileIds?: string[];
@@ -15,7 +16,7 @@ interface HexMapProps {
 }
 
 export const HexMap: React.FC<HexMapProps> = ({ 
-    tiles, claimedTileIds, population, workedTileIds = [], lockedTileIds = [], onTileClick, selectedTileId, hexSize = 50
+    tiles, claimedTileIds, showClaimable, population, workedTileIds = [], lockedTileIds = [], onTileClick, selectedTileId, hexSize = 50
 }) => {
     const size = hexSize;
 
@@ -58,6 +59,7 @@ export const HexMap: React.FC<HexMapProps> = ({
                                 isSelected={tile.id === selectedTileId}
                                 isClaimed={isClaimed}
                                 isClaimable={isClaimable}
+                                showClaimable={showClaimable}
                                 isCity={isCity}
                                 population={isCity ? population : undefined}
                                 isWorked={workedTileIds.includes(tile.id)}

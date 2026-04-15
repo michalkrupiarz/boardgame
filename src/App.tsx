@@ -32,6 +32,7 @@ function App() {
         <HexMap 
           tiles={gameState.map} 
           claimedTileIds={gameState.city.claimedTileIds}
+          showClaimable={showCityPanels}
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}
           lockedTileIds={gameState.city.lockedTileIds}

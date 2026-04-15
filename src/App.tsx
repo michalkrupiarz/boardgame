@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, toggleAutoExpand, claimTile, isAdjacentToClaimed, getClaimCost, getDistance } from './state/GameState';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, toggleAutoExpand, claimTile, isAdjacentToClaimed, getClaimCost, getDistance, getTileYieldSum } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
@@ -42,13 +42,21 @@ function App() {
 
   const currentYields = calculateTurnYield(gameState);
 
+  const bestClaimableTile = showCityPanels ? 
+    gameState.map
+      .filter(t => !gameState.city.claimedTileIds.includes(t.id) && isAdjacentToClaimed(t as any, gameState.city.claimedTileIds))
+      .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a))[0] : null;
+
+  const effectiveClaimingTileId = claimingTileId || 
+    (gameState.city.autoExpand && bestClaimableTile ? bestClaimableTile.id : undefined);
+
   return (
     <div className="app-container">
       <div className="map-layer">
         <HexMap 
           tiles={gameState.map} 
           claimedTileIds={gameState.city.claimedTileIds}
-          claimingTileId={claimingTileId}
+          claimingTileId={effectiveClaimingTileId}
           showClaimable={showCityPanels}
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}

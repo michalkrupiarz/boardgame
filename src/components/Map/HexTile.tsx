@@ -53,7 +53,7 @@ export const HexTile: React.FC<HexTileProps> = ({
         <g 
             transform={`translate(${x}, ${y})`} 
             className={`hex-tile ${isSelected ? 'selected' : ''}`}
-            style={{ opacity: isClaimed || canBeClaimed ? 1 : 0.3 }}
+            style={{ opacity: isClaimed || isClaiming ? 1 : 0.3 }}
             onClick={() => onClick(tile)}
             data-testid="hex-tile"
             data-tile-id={tile.id}

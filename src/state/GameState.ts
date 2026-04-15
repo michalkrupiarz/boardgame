@@ -56,6 +56,7 @@ export interface City {
     workedTileIds: string[]; // IDs of tiles currently worked by citizens
     lockedTileIds: string[]; // IDs of tiles manually locked by the player
     claimedTileIds: string[]; // IDs of tiles claimed via culture
+    targetClaimTileId?: string; // Tile currently targeted for cultural acquisition
     autoExpand: boolean; // Auto-claim adjacent tiles when culture available
 }
 
@@ -94,12 +95,13 @@ export function getInitialState(mapSize: number = 7): GameState {
     const map = generateInitialMap(mapSize);
     const claimedTileIds = ['0,0'];
     
-    // Claim all tiles at distance 1 from center (one tile in all directions)
     map.forEach(tile => {
         if (getDistance(tile.q, tile.r) === 1) {
             claimedTileIds.push(tile.id);
         }
     });
+
+    const targetClaimTileId = getBestClaimableTileId(map, claimedTileIds);
 
     return {
         turn: 1,
@@ -117,10 +119,18 @@ export function getInitialState(mapSize: number = 7): GameState {
             workedTileIds: ['0,0'],
             lockedTileIds: [],
             claimedTileIds,
+            targetClaimTileId,
             autoExpand: false
         },
         map
     };
+}
+
+export function getBestClaimableTileId(map: Tile[], claimedTileIds: string[]): string | undefined {
+    const claimable = map.filter(t => !claimedTileIds.includes(t.id) && isAdjacentToClaimed(t, claimedTileIds));
+    if (claimable.length === 0) return undefined;
+    claimable.sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a));
+    return claimable[0].id;
 }
 
 export function getDistance(q: number, r: number, targetQ: number = 0, targetR: number = 0): number {
@@ -280,27 +290,30 @@ export function nextTurn(state: GameState): GameState {
         newState = autoAssignCitizens(newState);
     }
 
-    if (state.city.autoExpand) {
-        newState = autoClaimTiles(newState);
-    }
+    newState = processTargetClaim(newState);
     
     return newState;
 }
 
-function autoClaimTiles(state: GameState): GameState {
+function processTargetClaim(state: GameState): GameState {
     let newState = state;
     
-    while (true) {
-        const claimable = getClaimableTiles(newState.map, newState.city.claimedTileIds);
-        if (claimable.length === 0) break;
+    while (newState.city.targetClaimTileId) {
+        const targetTile = newState.map.find(t => t.id === newState.city.targetClaimTileId);
+        if (!targetTile) break;
         
-        const bestTile = claimable
-            .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a))[0];
-        
-        const cost = getClaimCost(getDistance(bestTile.q, bestTile.r));
+        const cost = getClaimCost(getDistance(targetTile.q, targetTile.r));
         if (newState.city.resources.culture < cost) break;
         
-        newState = claimTile(newState, bestTile.id);
+        newState = claimTile(newState, targetTile.id);
+        const newTargetId = getBestClaimableTileId(newState.map, newState.city.claimedTileIds);
+        newState = {
+            ...newState,
+            city: {
+                ...newState.city,
+                targetClaimTileId: newTargetId
+            }
+        };
     }
     
     return newState;

@@ -6,18 +6,19 @@ import { HexTile } from './HexTile';
 interface HexMapProps {
     tiles: Tile[];
     claimedTileIds: string[];
-    claimingTileId?: string;
+    targetClaimTileId?: string;
     showClaimable?: boolean;
     population?: number;
     workedTileIds?: string[];
     lockedTileIds?: string[];
     onTileClick: (tile: Tile) => void;
+    onTargetSelect?: (tileId: string) => void;
     selectedTileId?: string;
     hexSize?: number;
 }
 
 export const HexMap: React.FC<HexMapProps> = ({ 
-    tiles, claimedTileIds, claimingTileId, showClaimable, population, workedTileIds = [], lockedTileIds = [], onTileClick, selectedTileId, hexSize = 50
+    tiles, claimedTileIds, targetClaimTileId, showClaimable, population, workedTileIds = [], lockedTileIds = [], onTileClick, onTargetSelect, selectedTileId, hexSize = 50
 }) => {
     const size = hexSize;
 
@@ -50,7 +51,7 @@ export const HexMap: React.FC<HexMapProps> = ({
                     {tiles.map(tile => {
                         const isClaimed = claimedTileIds.includes(tile.id);
                         const isClaimable = !isClaimed && isAdjacentToClaimed(tile, claimedTileIds);
-                        const isClaiming = tile.id === claimingTileId;
+                        const isTargetClaim = tile.id === targetClaimTileId;
                         const isCity = tile.q === 0 && tile.r === 0;
 
                         return (
@@ -62,12 +63,17 @@ export const HexMap: React.FC<HexMapProps> = ({
                                 isClaimed={isClaimed}
                                 isClaimable={isClaimable}
                                 showClaimable={showClaimable}
-                                isClaiming={isClaiming}
+                                isTargetClaim={isTargetClaim}
                                 isCity={isCity}
                                 population={isCity ? population : undefined}
                                 isWorked={workedTileIds.includes(tile.id)}
                                 isLocked={lockedTileIds.includes(tile.id)}
-                                onClick={onTileClick}
+                                onClick={(t) => {
+                                    if (showClaimable && isClaimable) {
+                                        onTargetSelect?.(t.id);
+                                    }
+                                    onTileClick(t);
+                                }}
                             />
                         );
                     })}

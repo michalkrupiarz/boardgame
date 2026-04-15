@@ -5,18 +5,18 @@ interface TileInfoPanelProps {
     tile: Tile | null;
     isClaimed: boolean;
     isClaimable?: boolean;
+    isTargetClaim?: boolean;
     claimCost?: number;
-    culture: number;
     isWorked?: boolean;
     isLocked?: boolean;
     canAssign?: boolean;
-    onClaim?: () => void;
+    onSelectAsTarget?: () => void;
     onToggleWorker?: () => void;
     onClose: () => void;
 }
 
 export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({ 
-    tile, isClaimed, isClaimable, claimCost, culture, isWorked, isLocked, canAssign, onClaim, onToggleWorker, onClose 
+    tile, isClaimed, isClaimable, isTargetClaim, claimCost, isWorked, isLocked, canAssign, onSelectAsTarget, onToggleWorker, onClose 
 }) => {
     if (!tile) return null;
 
@@ -24,6 +24,7 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
 
     const getStatusDisplay = () => {
         if (isClaimed) return { text: '✓ Claimed Territory', color: '#4ade80' };
+        if (isTargetClaim) return { text: `Target: Next (${claimCost} Cult)`, color: '#ec4899' };
         if (isClaimable) return { text: `Claimable (${claimCost} Cult)`, color: '#facc15' };
         return { text: '✕ Outside Territory', color: '#f87171' };
     };
@@ -93,7 +94,7 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                 </div>
             </div>
 
-            {isClaimable && onClaim && (
+            {isClaimable && !isTargetClaim && (
                 <div style={{ marginTop: '15px' }}>
                     <button 
                         className="glass-panel"
@@ -102,20 +103,14 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                             padding: '10px', 
                             fontWeight: '600', 
                             color: 'white', 
-                            background: culture >= (claimCost || 0) ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                            background: '#ec4899',
                             border: 'none',
-                            cursor: culture >= (claimCost || 0) ? 'pointer' : 'not-allowed'
+                            cursor: 'pointer'
                         }}
-                        disabled={culture < (claimCost || 0)}
-                        onClick={onClaim}
+                        onClick={onSelectAsTarget}
                     >
-                        Claim Tile
+                        Set as Target
                     </button>
-                    {culture < (claimCost || 0) && (
-                        <p style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '5px', textAlign: 'center' }}>
-                            Not enough culture!
-                        </p>
-                    )}
                 </div>
             )}
 

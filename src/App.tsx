@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, toggleAutoExpand, claimTile, isAdjacentToClaimed, getClaimCost, getDistance, getTileYieldSum } from './state/GameState';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
@@ -8,7 +8,6 @@ import { CitySidePanel } from './components/City/CityView';
 function App() {
   const [gameState, setGameState] = useState<GameState>(() => getInitialState(11));
   const [selectedTileId, setSelectedTileId] = useState<string | undefined>();
-  const [claimingTileId, setClaimingTileId] = useState<string | undefined>();
   const [showCityPanels, setShowCityPanels] = useState(false);
 
   const selectedTile = gameState.map.find(t => t.id === selectedTileId) || null;
@@ -19,11 +18,7 @@ function App() {
 
   const handleTileClick = (tile: { id: string; q: number; r: number }) => {
     if (showCityPanels) {
-      const isClaimable = !gameState.city.claimedTileIds.includes(tile.id) && 
-                          isAdjacentToClaimed(tile as any, gameState.city.claimedTileIds);
-      if (isClaimable) {
-        setClaimingTileId(tile.id);
-      } else if (gameState.city.claimedTileIds.includes(tile.id)) {
+      if (gameState.city.claimedTileIds.includes(tile.id)) {
         setGameState(prev => toggleWorkedTile(prev, tile.id));
       }
     } else {
@@ -31,24 +26,19 @@ function App() {
     }
   };
 
-  const handleClaim = () => {
-    if (claimingTileId) {
-      setGameState(prev => claimTile(prev, claimingTileId));
-      setClaimingTileId(undefined);
-    }
+  const handleTargetSelect = (tileId: string) => {
+    setGameState(prev => ({
+      ...prev,
+      city: {
+        ...prev.city,
+        targetClaimTileId: tileId
+      }
+    }));
   };
 
-  const claimingTile = claimingTileId ? gameState.map.find(t => t.id === claimingTileId) : null;
-
   const currentYields = calculateTurnYield(gameState);
-
-  const bestClaimableTile = showCityPanels ? 
-    gameState.map
-      .filter(t => !gameState.city.claimedTileIds.includes(t.id) && isAdjacentToClaimed(t as any, gameState.city.claimedTileIds))
-      .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a))[0] : null;
-
-  const effectiveClaimingTileId = claimingTileId || 
-    (gameState.city.autoExpand && bestClaimableTile ? bestClaimableTile.id : undefined);
+  const targetTile = gameState.city.targetClaimTileId ? 
+    gameState.map.find(t => t.id === gameState.city.targetClaimTileId) : null;
 
   return (
     <div className="app-container">
@@ -56,12 +46,13 @@ function App() {
         <HexMap 
           tiles={gameState.map} 
           claimedTileIds={gameState.city.claimedTileIds}
-          claimingTileId={effectiveClaimingTileId}
-          showClaimable={showCityPanels}
+          targetClaimTileId={gameState.city.targetClaimTileId}
+          showClaimable={true}
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}
           lockedTileIds={gameState.city.lockedTileIds}
           onTileClick={handleTileClick}
+          onTargetSelect={handleTargetSelect}
           selectedTileId={selectedTileId} 
         />
       </div>
@@ -96,20 +87,11 @@ function App() {
               <span style={{ fontSize: '0.8em', opacity: 0.8 }}>(+{currentYields.culture})</span>
             </div>
 
-            <button
-              className="glass-pill"
-              style={{ 
-                padding: '4px 12px', 
-                background: gameState.city.autoExpand ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
-                border: 'none',
-                color: 'white',
-                cursor: 'pointer'
-              }}
-              onClick={() => setGameState(prev => toggleAutoExpand(prev))}
-              title="Auto-expand: Automatically claim tiles when culture is available"
-            >
-              Auto: {gameState.city.autoExpand ? 'ON' : 'OFF'}
-            </button>
+            {targetTile && (
+              <div className="glass-pill text-culture" style={{ border: '2px solid #ec4899' }}>
+                <span>Next: {targetTile.terrain} ({getClaimCost(getDistance(targetTile.q, targetTile.r))} Cult)</span>
+              </div>
+            )}
           </div>
 
           <div style={{ display: 'flex', gap: '15px' }}>
@@ -135,30 +117,14 @@ function App() {
             tile={selectedTile} 
             isClaimed={gameState.city.claimedTileIds.includes(selectedTile.id)}
             isClaimable={!gameState.city.claimedTileIds.includes(selectedTile.id) && isAdjacentToClaimed(selectedTile, gameState.city.claimedTileIds)}
+            isTargetClaim={selectedTile.id === gameState.city.targetClaimTileId}
             claimCost={getClaimCost(getDistance(selectedTile.q, selectedTile.r))}
-            culture={gameState.city.resources.culture}
             isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
             isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
             canAssign={gameState.city.claimedTileIds.includes(selectedTile.id) && gameState.city.workedTileIds.length < gameState.city.population}
-            onClaim={() => setGameState(prev => claimTile(prev, selectedTile.id))}
+            onSelectAsTarget={() => handleTargetSelect(selectedTile.id)}
             onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
             onClose={() => setSelectedTileId(undefined)} 
-          />
-        )}
-
-        {claimingTile && (
-          <TileInfoPanel 
-            tile={claimingTile} 
-            isClaimed={false}
-            isClaimable={true}
-            claimCost={getClaimCost(getDistance(claimingTile.q, claimingTile.r))}
-            culture={gameState.city.resources.culture}
-            isWorked={false}
-            isLocked={false}
-            canAssign={false}
-            onClaim={handleClaim}
-            onToggleWorker={() => {}}
-            onClose={() => setClaimingTileId(undefined)} 
           />
         )}
       </div>

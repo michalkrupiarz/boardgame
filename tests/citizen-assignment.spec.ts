@@ -1,4 +1,10 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
+
+async function getCurrentTurn(page: Page): Promise<number> {
+  const turnText = await page.locator('div:has-text("Turn ")').first().textContent();
+  const match = turnText?.match(/Turn (\d+)/);
+  return match ? parseInt(match[1], 10) : 1;
+}
 
 test.describe('Citizen Assignment', () => {
   test.beforeEach(async ({ page }) => {
@@ -17,14 +23,11 @@ test.describe('Tile Claiming', () => {
   });
 
   test('should show claimable tiles only in City View', async ({ page }) => {
-    // Before opening City View - no pink bordered tiles should be visible
     const claimableTiles = page.locator('g.hex-tile polygon[stroke="#ec4899"]');
     await expect(claimableTiles).toHaveCount(0);
 
-    // Open City View
     await page.getByRole('button', { name: 'City View' }).click();
 
-    // Now claimable tiles should have pink borders (dashed)
     const dashedClaimableTiles = page.locator('g.hex-tile polygon[stroke-dasharray="8,4"]');
     await expect(dashedClaimableTiles.first()).toBeVisible();
   });
@@ -32,7 +35,6 @@ test.describe('Tile Claiming', () => {
   test('should have target tile with solid pink border', async ({ page }) => {
     await page.getByRole('button', { name: 'City View' }).click();
 
-    // Target tile should have solid pink border (not dashed)
     const solidPinkTiles = page.locator('g.hex-tile polygon[stroke="#ec4899"][stroke-dasharray="none"]');
     await expect(solidPinkTiles.first()).toBeVisible();
   });
@@ -40,23 +42,19 @@ test.describe('Tile Claiming', () => {
   test('should show target tile info in HUD', async ({ page }) => {
     await page.getByRole('button', { name: 'City View' }).click();
 
-    // HUD should show "Next: [terrain] (cost Cult)"
     const nextTileInfo = page.locator('text=/Next: .+ \\(\\d+ Cult\\)/');
     await expect(nextTileInfo).toBeVisible();
   });
 
   test('should accumulate culture over turns', async ({ page }) => {
-    // Close city panels if open
     const cityButton = page.getByRole('button', { name: /City View|Close City/ });
     if (await cityButton.getByText('Close City').isVisible()) {
       await cityButton.click();
     }
 
-    // Check initial culture
     const initialCulture = page.locator('.text-culture').first();
     await expect(initialCulture).toContainText('Cult: 0');
 
-    // Click next turn
     await page.getByRole('button', { name: 'Next Turn' }).click();
     await expect(page.locator('text=Turn 2')).toBeVisible();
   });
@@ -64,18 +62,37 @@ test.describe('Tile Claiming', () => {
   test('should auto-claim tile when enough culture accumulated', async ({ page }) => {
     await page.getByRole('button', { name: 'City View' }).click();
 
-    // Close and accumulate culture (need 20+ culture for distance 2)
+    const nextTileInfo = page.locator('text=/Next: .+ \\(\\d+ Cult\\)/');
+    await expect(nextTileInfo).toBeVisible();
+
     await page.getByRole('button', { name: 'Close City' }).click();
-    for (let i = 0; i < 10; i++) {
+
+    const getCulture = async () => {
+      const cultureText = await page.locator('.text-culture').first().textContent();
+      const match = cultureText?.match(/Cult: (\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+
+    const getTargetCost = async () => {
+      const info = await nextTileInfo.textContent();
+      const match = info?.match(/\((\d+) Cult\)/);
+      return match ? parseInt(match[1], 10) : 20;
+    };
+
+    let culture = await getCulture();
+    const targetCost = await getTargetCost();
+
+    while (culture < targetCost) {
+      const currentTurn = await getCurrentTurn(page);
       await page.getByRole('button', { name: 'Next Turn' }).click();
+      await expect(page.locator(`text=Turn ${currentTurn + 1}`)).toBeVisible();
+      culture = await getCulture();
     }
 
     await page.getByRole('button', { name: 'City View' }).click();
-    await page.waitForTimeout(500);
 
-    // Target tile should still exist
-    const targetTile = page.locator('g.hex-tile polygon[stroke="#ec4899"][stroke-dasharray="none"]');
-    await expect(targetTile).toBeVisible();
+    const solidPinkTile = page.locator('g.hex-tile polygon[stroke="#ec4899"][stroke-dasharray="none"]');
+    await expect(solidPinkTile).toBeVisible();
   });
 });
 
@@ -97,8 +114,17 @@ test.describe('City Side Panels', () => {
     await page.getByRole('button', { name: 'City View' }).click();
     
     await page.getByRole('button', { name: 'Close City' }).click();
-    for (let i = 0; i < 10; i++) {
+    
+    const getProduction = async () => {
+      const prodText = await page.locator('.text-production').first().textContent();
+      const match = prodText?.match(/Prod: (\d+)/);
+      return match ? parseInt(match[1], 10) : 0;
+    };
+
+    while (await getProduction() < 20) {
+      const currentTurn = await getCurrentTurn(page);
       await page.getByRole('button', { name: 'Next Turn' }).click();
+      await expect(page.locator(`text=Turn ${currentTurn + 1}`)).toBeVisible();
     }
     
     await page.getByRole('button', { name: 'City View' }).click();

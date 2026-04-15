@@ -55,6 +55,8 @@ export interface City {
     resources: Resources;
     workedTileIds: string[]; // IDs of tiles currently worked by citizens
     lockedTileIds: string[]; // IDs of tiles manually locked by the player
+    claimedTileIds: string[]; // IDs of tiles claimed via culture
+    autoExpand: boolean; // Auto-claim adjacent tiles when culture available
 }
 
 export interface GameState {
@@ -102,8 +104,10 @@ export function getInitialState(mapSize: number = 7): GameState {
                 culture: 0,
                 science: 0
             },
-            workedTileIds: ['0,0'], // Initial worker on city center (optional, usually city center is free)
-            lockedTileIds: []
+            workedTileIds: ['0,0'],
+            lockedTileIds: [],
+            claimedTileIds: ['0,0'], // City center starts claimed
+            autoExpand: false
         },
         map: generateInitialMap(mapSize)
     };
@@ -118,6 +122,64 @@ export function getCurrentRadius(culture: number): number {
     if (culture >= 150) return 3;
     if (culture >= 50) return 2;
     return 1;
+}
+
+export function getClaimCost(distance: number): number {
+    return Math.max(10, distance * 10);
+}
+
+export function isAdjacentToClaimed(tile: Tile, claimedTileIds: string[]): boolean {
+    if (claimedTileIds.includes(tile.id)) return true;
+    
+    const directions = [
+        { q: 1, r: 0 }, { q: 1, r: -1 }, { q: 0, r: -1 },
+        { q: -1, r: 0 }, { q: -1, r: 1 }, { q: 0, r: 1 }
+    ];
+    
+    for (const dir of directions) {
+        const neighborId = `${tile.q + dir.q},${tile.r + dir.r}`;
+        if (claimedTileIds.includes(neighborId)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+export function getClaimableTiles(map: Tile[], claimedTileIds: string[]): Tile[] {
+    return map.filter(tile => !claimedTileIds.includes(tile.id) && isAdjacentToClaimed(tile, claimedTileIds));
+}
+
+export function claimTile(state: GameState, tileId: string): GameState {
+    const tile = state.map.find(t => t.id === tileId);
+    if (!tile) return state;
+    
+    if (state.city.claimedTileIds.includes(tile.id)) return state;
+    if (!isAdjacentToClaimed(tile, state.city.claimedTileIds)) return state;
+    
+    const cost = getClaimCost(getDistance(tile.q, tile.r));
+    if (state.city.resources.culture < cost) return state;
+    
+    return {
+        ...state,
+        city: {
+            ...state.city,
+            claimedTileIds: [...state.city.claimedTileIds, tile.id],
+            resources: {
+                ...state.city.resources,
+                culture: state.city.resources.culture - cost
+            }
+        }
+    };
+}
+
+export function toggleAutoExpand(state: GameState): GameState {
+    return {
+        ...state,
+        city: {
+            ...state.city,
+            autoExpand: !state.city.autoExpand
+        }
+    };
 }
 
 export function getTileYieldSum(tile: Tile): number {
@@ -176,6 +238,7 @@ export function getFoodThresholdForNextPopulation(currentPopulation: number): nu
 export function nextTurn(state: GameState): GameState {
     const yields = calculateTurnYield(state);
     
+    let newCulture = state.city.resources.culture + yields.culture;
     let newFood = state.city.resources.food + yields.food;
     let newPopulation = state.city.population;
     let threshold = getFoodThresholdForNextPopulation(newPopulation);
@@ -197,15 +260,37 @@ export function nextTurn(state: GameState): GameState {
                 gold: state.city.resources.gold + yields.gold,
                 production: state.city.resources.production + yields.production,
                 food: newFood,
-                culture: state.city.resources.culture + yields.culture,
+                culture: newCulture,
                 science: state.city.resources.science + yields.science,
             }
         }
     };
 
-    // Auto-assign any new population members
     if (newPopulation > state.city.population) {
         newState = autoAssignCitizens(newState);
+    }
+
+    if (state.city.autoExpand) {
+        newState = autoClaimTiles(newState);
+    }
+    
+    return newState;
+}
+
+function autoClaimTiles(state: GameState): GameState {
+    let newState = state;
+    
+    while (true) {
+        const claimable = getClaimableTiles(newState.map, newState.city.claimedTileIds);
+        if (claimable.length === 0) break;
+        
+        const bestTile = claimable
+            .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a))[0];
+        
+        const cost = getClaimCost(getDistance(bestTile.q, bestTile.r));
+        if (newState.city.resources.culture < cost) break;
+        
+        newState = claimTile(newState, bestTile.id);
     }
     
     return newState;
@@ -235,34 +320,28 @@ export function toggleWorkedTile(state: GameState, tileId: string): GameState {
     const tile = state.map.find(t => t.id === tileId);
     if (!tile) return state;
 
-    // Cannot unassign city center if it's handled as "free"
     if (tile.q === 0 && tile.r === 0) return state;
 
-    const currentRadius = getCurrentRadius(state.city.resources.culture);
-    if (getDistance(tile.q, tile.r) > currentRadius) return state;
+    if (!state.city.claimedTileIds.includes(tileId)) return state;
 
     const isAlreadyWorked = state.city.workedTileIds.includes(tileId);
     let newWorked = [...state.city.workedTileIds];
     let newLocked = [...state.city.lockedTileIds];
 
     if (isAlreadyWorked) {
-        // Unassign
         newWorked = newWorked.filter(id => id !== tileId);
         newLocked = newLocked.filter(id => id !== tileId);
     } else {
-        // Assign
         if (newWorked.length < state.city.population) {
             newWorked.push(tileId);
-            newLocked.push(tileId); // Manually added citizens are locked
+            newLocked.push(tileId);
         } else {
-            // Swap with an unlocked citizen if possible
             const unlockedTileId = newWorked.find(id => !newLocked.includes(id));
             if (unlockedTileId) {
                 newWorked = newWorked.filter(id => id !== unlockedTileId);
                 newWorked.push(tileId);
                 newLocked.push(tileId);
             } else {
-                // All citizens are locked, cannot assign more
                 return state;
             }
         }
@@ -279,10 +358,8 @@ export function toggleWorkedTile(state: GameState, tileId: string): GameState {
 }
 
 export function autoAssignCitizens(state: GameState): GameState {
-    const currentRadius = getCurrentRadius(state.city.resources.culture);
     const population = state.city.population;
     
-    // 1. Keep locked citizens
     let newWorked = [...state.city.lockedTileIds];
     const availableSlots = population - newWorked.length;
 
@@ -296,15 +373,13 @@ export function autoAssignCitizens(state: GameState): GameState {
         };
     }
 
-    // 2. Identify all candidates (in radius, not city center, not locked)
     const candidates = state.map
         .filter(t => t.isExplored)
-        .filter(t => getDistance(t.q, t.r) <= currentRadius)
+        .filter(t => state.city.claimedTileIds.includes(t.id))
         .filter(t => !(t.q === 0 && t.r === 0))
         .filter(t => !state.city.lockedTileIds.includes(t.id))
         .sort((a, b) => getTileYieldSum(b) - getTileYieldSum(a));
 
-    // 3. Fill remaining slots
     const extraTiles = candidates.slice(0, availableSlots).map(t => t.id);
     newWorked = [...newWorked, ...extraTiles];
 

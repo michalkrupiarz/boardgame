@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile } from './state/GameState';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, toggleAutoExpand, claimTile, isAdjacentToClaimed, getClaimCost, getDistance } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
@@ -16,6 +16,14 @@ function App() {
     setGameState(prev => nextTurn(prev));
   };
 
+  const handleTileClick = (tile: { id: string; q: number; r: number }) => {
+    if (showCityPanels) {
+      setGameState(prev => toggleWorkedTile(prev, tile.id));
+    } else {
+      setSelectedTileId(tile.id);
+    }
+  };
+
   const currentYields = calculateTurnYield(gameState);
 
   return (
@@ -23,24 +31,18 @@ function App() {
       <div className="map-layer">
         <HexMap 
           tiles={gameState.map} 
-          culture={gameState.city.resources.culture}
+          claimedTileIds={gameState.city.claimedTileIds}
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}
           lockedTileIds={gameState.city.lockedTileIds}
-          onTileClick={(tile) => {
-            if (showCityPanels) {
-              setGameState(prev => toggleWorkedTile(prev, tile.id));
-            } else {
-              setSelectedTileId(tile.id);
-            }
-          }} 
+          onTileClick={handleTileClick}
           selectedTileId={selectedTileId} 
         />
       </div>
 
       <div className="ui-layer">
         <div style={{ display: 'flex', justifyContent: 'space-between', padding: '20px' }}>
-          <div className="glass-panel" style={{ display: 'flex', gap: '20px', padding: '10px 20px', alignItems: 'center' }}>
+          <div className="glass-panel" style={{ display: 'flex', gap: '20px', padding: '10px 20px', alignItems: 'center', flexWrap: 'wrap' }}>
             <div style={{ fontWeight: '600', marginRight: '10px' }}>Turn {gameState.turn}</div>
             
             <div className="glass-pill text-gold">
@@ -67,6 +69,21 @@ function App() {
               <span>Cult: {gameState.city.resources.culture}</span>
               <span style={{ fontSize: '0.8em', opacity: 0.8 }}>(+{currentYields.culture})</span>
             </div>
+
+            <button
+              className="glass-pill"
+              style={{ 
+                padding: '4px 12px', 
+                background: gameState.city.autoExpand ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                border: 'none',
+                color: 'white',
+                cursor: 'pointer'
+              }}
+              onClick={() => setGameState(prev => toggleAutoExpand(prev))}
+              title="Auto-expand: Automatically claim tiles when culture is available"
+            >
+              Auto: {gameState.city.autoExpand ? 'ON' : 'OFF'}
+            </button>
           </div>
 
           <div style={{ display: 'flex', gap: '15px' }}>
@@ -90,10 +107,14 @@ function App() {
         {selectedTile && !showCityPanels && (
           <TileInfoPanel 
             tile={selectedTile} 
+            isClaimed={gameState.city.claimedTileIds.includes(selectedTile.id)}
+            isClaimable={!gameState.city.claimedTileIds.includes(selectedTile.id) && isAdjacentToClaimed(selectedTile, gameState.city.claimedTileIds)}
+            claimCost={getClaimCost(getDistance(selectedTile.q, selectedTile.r))}
             culture={gameState.city.resources.culture}
             isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
             isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
-            canAssign={gameState.city.workedTileIds.length < gameState.city.population}
+            canAssign={gameState.city.claimedTileIds.includes(selectedTile.id) && gameState.city.workedTileIds.length < gameState.city.population}
+            onClaim={() => setGameState(prev => claimTile(prev, selectedTile.id))}
             onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
             onClose={() => setSelectedTileId(undefined)} 
           />

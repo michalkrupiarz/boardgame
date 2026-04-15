@@ -7,6 +7,7 @@ interface HexTileProps {
     size: number;
     isSelected: boolean;
     isClaimed: boolean;
+    isClaimable?: boolean;
     isCity: boolean;
     population?: number;
     isWorked?: boolean;
@@ -14,29 +15,20 @@ interface HexTileProps {
     onClick: (tile: Tile) => void;
 }
 
-// pointy top hexagon: width = sqrt(3)*size, height = 2*size
-// Half widths and heights for polygon points
-// w = sqrt(3)/2 * size, h = size
-
 export const HexTile: React.FC<HexTileProps> = ({ 
-    tile, size, isSelected, isClaimed, isCity, population, isWorked, isLocked, onClick 
+    tile, size, isSelected, isClaimed, isClaimable, isCity, population, isWorked, isLocked, onClick 
 }) => {
-    // Axial to pixel coords (pointy top)
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
 
-    // Hexagon polygon points relative to center (pointy top)
-    // Top point at (0, -size), going clockwise
-    const w = (Math.sqrt(3) / 2) * size; // half width
-    const h = size; // half height
+    const w = (Math.sqrt(3) / 2) * size;
+    const h = size;
     const points = `0,${-size} ${w},${-h/2} ${w},${h/2} 0,${size} ${-w},${h/2} ${-w},${-h/2}`;
 
-    // Worker icon scales with hex size
     const iconScale = size / 50;
     const headRadius = 5 * iconScale;
     const strokeWidth = 3 * iconScale;
 
-    // Define CSS variable colors depending on terrain
     const getFillColor = (terrain: TerrainType) => {
         switch (terrain) {
             case 'Plains': return 'var(--color-plains)';
@@ -46,11 +38,19 @@ export const HexTile: React.FC<HexTileProps> = ({
         }
     };
 
+    const getStrokeStyle = () => {
+        if (isClaimed) return { stroke: 'rgba(255,255,255,0.4)', strokeWidth: 3 };
+        if (isClaimable) return { stroke: 'var(--accent)', strokeWidth: 3, strokeDasharray: '8,4' };
+        return { stroke: 'rgba(255,255,255,0.2)', strokeWidth: 2 };
+    };
+
+    const strokeStyle = getStrokeStyle();
+
     return (
         <g 
             transform={`translate(${x}, ${y})`} 
             className={`hex-tile ${isSelected ? 'selected' : ''}`}
-            style={{ opacity: isClaimed ? 1 : 0.4 }}
+            style={{ opacity: isClaimed || isClaimable ? 1 : 0.3 }}
             onClick={() => onClick(tile)}
             data-testid="hex-tile"
             data-tile-id={tile.id}
@@ -58,8 +58,9 @@ export const HexTile: React.FC<HexTileProps> = ({
             <polygon 
                 points={points}
                 fill={getFillColor(tile.terrain)}
-                stroke="rgba(255,255,255,0.2)"
-                strokeWidth="2"
+                stroke={strokeStyle.stroke}
+                strokeWidth={strokeStyle.strokeWidth}
+                strokeDasharray={isClaimable ? '8,4' : 'none'}
             />
             {isCity && (
                 <g>

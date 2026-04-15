@@ -1,23 +1,34 @@
-import { terrainBonuses, getDistance, getCurrentRadius } from '../../state/GameState';
+import { terrainBonuses } from '../../state/GameState';
 import type { Tile } from '../../state/GameState';
 
 interface TileInfoPanelProps {
     tile: Tile | null;
+    isClaimed: boolean;
+    isClaimable?: boolean;
+    claimCost?: number;
     culture: number;
     isWorked?: boolean;
     isLocked?: boolean;
     canAssign?: boolean;
+    onClaim?: () => void;
     onToggleWorker?: () => void;
     onClose: () => void;
 }
 
 export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({ 
-    tile, culture, isWorked, isLocked, canAssign, onToggleWorker, onClose 
+    tile, isClaimed, isClaimable, claimCost, culture, isWorked, isLocked, canAssign, onClaim, onToggleWorker, onClose 
 }) => {
     if (!tile) return null;
 
     const bonuses = terrainBonuses[tile.terrain];
-    const isClaimed = getDistance(tile.q, tile.r) <= getCurrentRadius(culture);
+
+    const getStatusDisplay = () => {
+        if (isClaimed) return { text: '✓ Claimed Territory', color: '#4ade80' };
+        if (isClaimable) return { text: `Claimable (${claimCost} Cult)`, color: '#facc15' };
+        return { text: '✕ Outside Territory', color: '#f87171' };
+    };
+
+    const status = getStatusDisplay();
 
     return (
         <div style={{
@@ -53,10 +64,10 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                 backgroundColor: 'rgba(255,255,255,0.1)', 
                 marginBottom: '15px',
                 textAlign: 'center',
-                color: isClaimed ? '#4ade80' : '#f87171',
+                color: status.color,
                 fontWeight: 600
             }}>
-                {isClaimed ? '✓ Claimed Territory' : '✕ Out of Borders'}
+                {status.text}
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -81,6 +92,32 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                     <span className="text-culture">+{bonuses.culture}</span>
                 </div>
             </div>
+
+            {isClaimable && onClaim && (
+                <div style={{ marginTop: '15px' }}>
+                    <button 
+                        className="glass-panel"
+                        style={{ 
+                            width: '100%', 
+                            padding: '10px', 
+                            fontWeight: '600', 
+                            color: 'white', 
+                            background: culture >= (claimCost || 0) ? 'var(--accent)' : 'rgba(255,255,255,0.1)',
+                            border: 'none',
+                            cursor: culture >= (claimCost || 0) ? 'pointer' : 'not-allowed'
+                        }}
+                        disabled={culture < (claimCost || 0)}
+                        onClick={onClaim}
+                    >
+                        Claim Tile
+                    </button>
+                    {culture < (claimCost || 0) && (
+                        <p style={{ fontSize: '0.75rem', color: '#f87171', marginTop: '5px', textAlign: 'center' }}>
+                            Not enough culture!
+                        </p>
+                    )}
+                </div>
+            )}
 
             {isClaimed && (tile.q !== 0 || tile.r !== 0) && (
                 <div style={{ marginTop: '20px' }}>

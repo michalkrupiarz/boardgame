@@ -91,6 +91,16 @@ export function generateInitialMap(size: number): Tile[] {
 }
 
 export function getInitialState(mapSize: number = 7): GameState {
+    const map = generateInitialMap(mapSize);
+    const claimedTileIds = ['0,0'];
+    
+    // Claim all tiles at distance 1 from center (one tile in all directions)
+    map.forEach(tile => {
+        if (getDistance(tile.q, tile.r) === 1) {
+            claimedTileIds.push(tile.id);
+        }
+    });
+
     return {
         turn: 1,
         city: {
@@ -106,10 +116,10 @@ export function getInitialState(mapSize: number = 7): GameState {
             },
             workedTileIds: ['0,0'],
             lockedTileIds: [],
-            claimedTileIds: ['0,0'], // City center starts claimed
+            claimedTileIds,
             autoExpand: false
         },
-        map: generateInitialMap(mapSize)
+        map
     };
 }
 

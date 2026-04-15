@@ -8,6 +8,7 @@ import { CitySidePanel } from './components/City/CityView';
 function App() {
   const [gameState, setGameState] = useState<GameState>(() => getInitialState(11));
   const [selectedTileId, setSelectedTileId] = useState<string | undefined>();
+  const [claimingTileId, setClaimingTileId] = useState<string | undefined>();
   const [showCityPanels, setShowCityPanels] = useState(false);
 
   const selectedTile = gameState.map.find(t => t.id === selectedTileId) || null;
@@ -18,11 +19,26 @@ function App() {
 
   const handleTileClick = (tile: { id: string; q: number; r: number }) => {
     if (showCityPanels) {
-      setGameState(prev => toggleWorkedTile(prev, tile.id));
+      const isClaimable = !gameState.city.claimedTileIds.includes(tile.id) && 
+                          isAdjacentToClaimed(tile as any, gameState.city.claimedTileIds);
+      if (isClaimable) {
+        setClaimingTileId(tile.id);
+      } else if (gameState.city.claimedTileIds.includes(tile.id)) {
+        setGameState(prev => toggleWorkedTile(prev, tile.id));
+      }
     } else {
       setSelectedTileId(tile.id);
     }
   };
+
+  const handleClaim = () => {
+    if (claimingTileId) {
+      setGameState(prev => claimTile(prev, claimingTileId));
+      setClaimingTileId(undefined);
+    }
+  };
+
+  const claimingTile = claimingTileId ? gameState.map.find(t => t.id === claimingTileId) : null;
 
   const currentYields = calculateTurnYield(gameState);
 
@@ -32,6 +48,7 @@ function App() {
         <HexMap 
           tiles={gameState.map} 
           claimedTileIds={gameState.city.claimedTileIds}
+          claimingTileId={claimingTileId}
           showClaimable={showCityPanels}
           population={gameState.city.population}
           workedTileIds={gameState.city.workedTileIds}
@@ -118,6 +135,22 @@ function App() {
             onClaim={() => setGameState(prev => claimTile(prev, selectedTile.id))}
             onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
             onClose={() => setSelectedTileId(undefined)} 
+          />
+        )}
+
+        {claimingTile && (
+          <TileInfoPanel 
+            tile={claimingTile} 
+            isClaimed={false}
+            isClaimable={true}
+            claimCost={getClaimCost(getDistance(claimingTile.q, claimingTile.r))}
+            culture={gameState.city.resources.culture}
+            isWorked={false}
+            isLocked={false}
+            canAssign={false}
+            onClaim={handleClaim}
+            onToggleWorker={() => {}}
+            onClose={() => setClaimingTileId(undefined)} 
           />
         )}
       </div>

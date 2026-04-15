@@ -9,6 +9,7 @@ interface HexTileProps {
     isClaimed: boolean;
     isClaimable?: boolean;
     showClaimable?: boolean;
+    isClaiming?: boolean;
     isCity: boolean;
     population?: number;
     isWorked?: boolean;
@@ -17,7 +18,7 @@ interface HexTileProps {
 }
 
 export const HexTile: React.FC<HexTileProps> = ({ 
-    tile, size, isSelected, isClaimed, isClaimable, showClaimable, isCity, population, isWorked, isLocked, onClick 
+    tile, size, isSelected, isClaimed, isClaimable, showClaimable, isClaiming, isCity, population, isWorked, isLocked, onClick 
 }) => {
     const canBeClaimed = isClaimable && showClaimable;
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
@@ -41,7 +42,7 @@ export const HexTile: React.FC<HexTileProps> = ({
     };
 
     const getStrokeStyle = () => {
-        if (isClaimed) return { stroke: 'rgba(255,255,255,0.4)', strokeWidth: 3, strokeDasharray: 'none' };
+        if (isClaiming) return { stroke: '#ec4899', strokeWidth: 4, strokeDasharray: 'none' };
         if (canBeClaimed) return { stroke: '#ec4899', strokeWidth: 4, strokeDasharray: '8,4' };
         return { stroke: 'rgba(255,255,255,0.2)', strokeWidth: 2, strokeDasharray: 'none' };
     };

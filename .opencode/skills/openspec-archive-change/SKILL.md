@@ -91,6 +91,19 @@ Archive a completed change in the experimental workflow.
    - Whether specs were synced (if applicable)
    - Note about any warnings (incomplete artifacts/tasks)
 
+7. **Clean up other completed changes**
+
+   After archiving, check for any other completed changes in `openspec/changes/`:
+   ```bash
+   openspec list --json
+   ```
+
+   For each change with `"status": "complete"`:
+   - Archive it to `openspec/changes/archive/YYYY-MM-DD-<name>/`
+   - Show a brief message: "Also archived: <name>"
+
+   This keeps the working directory clean.
+
 **Output On Success**
 
 ```
@@ -104,6 +117,23 @@ Archive a completed change in the experimental workflow.
 All artifacts complete. All tasks complete.
 ```
 
+**Output On Success With Cleanup**
+
+```
+## Archive Complete
+
+**Change:** <change-name>
+**Schema:** <schema-name>
+**Archived to:** openspec/changes/archive/YYYY-MM-DD-<name>/
+**Specs:** ✓ Synced to main specs
+
+Also archived: <other-complete-change-1>
+Also archived: <other-complete-change-2>
+
+All artifacts complete. All tasks complete.
+Working directory now clean.
+```
+
 **Guardrails**
 - Always prompt for change selection if not provided
 - Use artifact graph (openspec status --json) for completion checking
@@ -112,3 +142,4 @@ All artifacts complete. All tasks complete.
 - Show clear summary of what happened
 - If sync is requested, use openspec-sync-specs approach (agent-driven)
 - If delta specs exist, always run the sync assessment and show the combined summary before prompting
+- After archiving, ALWAYS clean up other completed changes to keep the working directory clean

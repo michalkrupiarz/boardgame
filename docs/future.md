@@ -27,4 +27,4 @@
 - [x] Add unit tests for game logic
 - [x] Mobile responsive design
 - [x] PWA support for offline play
-- [ ] Performance optimization for large maps
+- [x] Performance optimization for large maps (minimap + efficient rendering)

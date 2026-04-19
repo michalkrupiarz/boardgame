@@ -9,7 +9,7 @@
 ## UI/UX
 - [x] Tooltip on tile hover showing yield bonuses
 - [x] Animated transitions for population growth
-- [ ] Mini-map for navigation on larger maps
+- [x] Mini-map for navigation on larger maps
 - [x] Settings panel (help/shortcuts modal)
 - [x] Show tile production/yield breakdown when in City View
 
@@ -26,5 +26,5 @@
 ## Technical
 - [x] Add unit tests for game logic
 - [x] Mobile responsive design
+- [x] PWA support for offline play
 - [ ] Performance optimization for large maps
-- [ ] PWA support for offline play

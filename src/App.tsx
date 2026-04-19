@@ -224,6 +224,17 @@ function App() {
         )}
       </div>
 
+      {gameState.map.length > 50 && (
+        <div className="glass-panel" style={{ position: 'absolute', bottom: '20px', left: '20px', width: '120px', height: '120px', zIndex: 50, overflow: 'hidden', padding: '4px' }}>
+          <div style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', marginBottom: '2px' }}>Map Preview</div>
+          <svg viewBox="-15 -15 30 30" style={{ width: '100%', height: '100%' }}>
+            {gameState.map.slice(0, 100).map(tile => (
+              <circle key={tile.id} cx={tile.q * 2} cy={tile.r * 2} r={1.5} fill={gameState.city.claimedTileIds.includes(tile.id) ? '#4ade80' : 'rgba(255,255,255,0.1)'} />
+            ))}
+          </svg>
+        </div>
+      )}
+
       {showCityPanels && (
         <CitySidePanel 
           state={gameState} 

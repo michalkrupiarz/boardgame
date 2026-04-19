@@ -1,0 +1,16 @@
+{
+  "name": "City Builder",
+  "short_name": "CityBuilder",
+  "description": "A turn-based strategy board game focused on municipal growth and resource management",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#3b82f6",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance } from './state/GameState';
+import { useState, useEffect, useCallback } from 'react';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance, saveGameState, loadGameState, clearSavedGame } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { buildImprovement } from './state/GameState';
@@ -7,7 +7,10 @@ import { TileInfoPanel } from './components/Map/TileInfoPanel';
 import { CitySidePanel } from './components/City/CityView';
 
 function App() {
-  const [gameState, setGameState] = useState<GameState>(() => getInitialState(11));
+  const [gameState, setGameState] = useState<GameState>(() => {
+    const saved = loadGameState();
+    return saved || getInitialState(11);
+  });
   const [selectedTileId, setSelectedTileId] = useState<string | undefined>();
   const [showCityPanels, setShowCityPanels] = useState(false);
 
@@ -40,6 +43,47 @@ function App() {
   const currentYields = calculateTurnYield(gameState);
   const targetTile = gameState.city.targetClaimTileId ? 
     gameState.map.find(t => t.id === gameState.city.targetClaimTileId) : null;
+
+  useEffect(() => {
+    saveGameState(gameState);
+  }, [gameState]);
+
+  const handleReset = () => {
+    if (confirm('Start new game? Current progress will be lost.')) {
+      clearSavedGame();
+      setGameState(getInitialState(11));
+      setSelectedTileId(undefined);
+    }
+  };
+
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+    
+    switch (e.key.toLowerCase()) {
+      case ' ':
+      case 'enter':
+        e.preventDefault();
+        handleNextTurn();
+        break;
+      case 'c':
+        setShowCityPanels(p => !p);
+        break;
+      case 'r':
+        handleReset();
+        break;
+      case 'escape':
+        setSelectedTileId(undefined);
+        break;
+      case 's':
+        saveGameState(gameState);
+        break;
+    }
+  }, [gameState, showCityPanels]);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   return (
     <div className="app-container">
@@ -102,6 +146,14 @@ function App() {
               onClick={() => setShowCityPanels(!showCityPanels)}
             >
               {showCityPanels ? 'Close City' : 'City View'}
+            </button>
+            <button 
+              className="glass-panel"
+              style={{ padding: '0 20px', fontWeight: '600', color: 'white', background: '#dc2626' }}
+              onClick={handleReset}
+              title="Start new game"
+            >
+              Reset
             </button>
             <button 
               className="glass-panel"

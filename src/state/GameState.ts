@@ -196,6 +196,32 @@ export function getInitialState(mapSize: number = 7): GameState {
     };
 }
 
+const STORAGE_KEY = 'cityBuilder_save';
+
+export function saveGameState(state: GameState): void {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {
+        console.error('Failed to save game:', e);
+    }
+}
+
+export function loadGameState(): GameState | null {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            return JSON.parse(saved) as GameState;
+        }
+    } catch (e) {
+        console.error('Failed to load game:', e);
+    }
+    return null;
+}
+
+export function clearSavedGame(): void {
+    localStorage.removeItem(STORAGE_KEY);
+}
+
 export function getBestClaimableTileId(map: Tile[], claimedTileIds: string[]): string | undefined {
     const claimable = map.filter(t => !claimedTileIds.includes(t.id) && isAdjacentToClaimed(t, claimedTileIds));
     if (claimable.length === 0) return undefined;

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { terrainBonuses, resourceBonuses, improvementBonuses } from '../../state/GameState';
 import type { Tile, TerrainType, ResourceType } from '../../state/GameState';
 import './HexMap.css';
 
@@ -34,6 +35,7 @@ interface HexTileProps {
 export const HexTile: React.FC<HexTileProps> = ({ 
     tile, size, isSelected, isClaimed, isClaimable, showClaimable, isTargetClaim, isCity, population, isWorked, isLocked, onClick 
 }) => {
+    const [showTooltip, setShowTooltip] = useState(false);
     const canBeClaimed = isClaimable && showClaimable;
     const x = size * Math.sqrt(3) * (tile.q + tile.r / 2);
     const y = size * (3/2) * tile.r;
@@ -45,6 +47,20 @@ export const HexTile: React.FC<HexTileProps> = ({
     const iconScale = size / 50;
     const headRadius = 5 * iconScale;
     const strokeWidth = 3 * iconScale;
+
+    const getYieldSummary = () => {
+        const bonuses = terrainBonuses[tile.terrain];
+        let summary = `Food: +${bonuses.food} Prod: +${bonuses.production} Gold: +${bonuses.gold}`;
+        if (tile.resource) {
+            const res = resourceBonuses[tile.resource];
+            summary += ` (+${res.food + res.production + res.gold} from ${tile.resource})`;
+        }
+        if (tile.improvement) {
+            const imp = improvementBonuses[tile.improvement];
+            summary += ` (+${imp.food + imp.production + imp.gold} from ${tile.improvement})`;
+        }
+        return summary;
+    };
 
     const getFillColor = (terrain: TerrainType) => {
         switch (terrain) {
@@ -83,6 +99,35 @@ export const HexTile: React.FC<HexTileProps> = ({
                 stroke={strokeStyle.stroke}
                 strokeWidth={strokeStyle.strokeWidth}
                 strokeDasharray={strokeStyle.strokeDasharray}
+            />
+            {showTooltip && (
+                <g>
+                    <rect 
+                        x={-size * 0.8} 
+                        y={-size * 1.9} 
+                        width={size * 1.6} 
+                        height={size * 0.7} 
+                        rx={4} 
+                        fill="rgba(0,0,0,0.9)" 
+                        stroke="var(--accent)" 
+                        strokeWidth={1}
+                    />
+                    <text 
+                        x={0} 
+                        y={-size * 1.5} 
+                        textAnchor="middle" 
+                        fill="white" 
+                        fontSize={size * 0.2}
+                    >
+                        {getYieldSummary()}
+                    </text>
+                </g>
+            )}
+            <rect 
+                x={-size} y={-size} width={size * 2} height={size * 2} 
+                fill="transparent" 
+                onMouseEnter={() => setShowTooltip(true)}
+                onMouseLeave={() => setShowTooltip(false)}
             />
             {isCity && (
                 <g>

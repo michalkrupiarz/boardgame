@@ -3,7 +3,7 @@ import {
   getInitialState, nextTurn, buildBuilding, calculateTurnYield, terrainBonuses, AVAILABLE_BUILDINGS,
   getDistance, getClaimCost, isAdjacentToClaimed, getBestClaimableTileId, claimTile, toggleWorkedTile, autoAssignCitizens,
   generateInitialMap, getCurrentRadius, getFoodThresholdForNextPopulation, getClaimableTiles, toggleAutoExpand, getTileYieldSum,
-  hasBuilding
+  hasBuilding, buildImprovement, saveGameState, loadGameState, clearSavedGame
 } from './GameState';
 import type { Tile } from './GameState';
 
@@ -469,5 +469,66 @@ describe('Granary Food Retention', () => {
     
     const nextState = nextTurn(state);
     expect(nextState.city.resources.food).toBeGreaterThan(0);
+  });
+});
+
+describe('Tile Improvements', () => {
+  it('can build Farm on Plains', () => {
+    const state = getInitialState(1);
+    state.city.resources.production = 20;
+    state.map[0].terrain = 'Plains';
+    
+    const nextState = buildImprovement(state, '0,0', 'Farm');
+    expect(nextState.map[0].improvement).toBe('Farm');
+    expect(nextState.city.resources.production).toBe(10);
+  });
+
+  it('can build Mine on Mountains', () => {
+    const state = getInitialState(1);
+    state.city.resources.production = 30;
+    state.map[0].terrain = 'Mountains';
+    
+    const nextState = buildImprovement(state, '0,0', 'Mine');
+    expect(nextState.map[0].improvement).toBe('Mine');
+  });
+
+  it('cannot build Mine on Plains', () => {
+    const state = getInitialState(1);
+    state.city.resources.production = 20;
+    state.map[0].terrain = 'Plains';
+    
+    const nextState = buildImprovement(state, '0,0', 'Mine');
+    expect(nextState.map[0].improvement).toBeUndefined();
+  });
+
+  it('improvement bonuses apply to yield', () => {
+    const state = getInitialState(1);
+    state.map[0].terrain = 'Plains';
+    state.map[0].improvement = 'Farm';
+    
+    const yields = calculateTurnYield(state);
+    expect(yields.food).toBeGreaterThan(terrainBonuses['Plains'].food);
+  });
+});
+
+describe('Save/Load', () => {
+  it('saves and loads game state', () => {
+    const state = getInitialState(3);
+    state.city.resources.gold = 100;
+    
+    saveGameState(state);
+    const loaded = loadGameState();
+    
+    expect(loaded).not.toBeNull();
+    expect(loaded!.city.resources.gold).toBe(100);
+    expect(loaded!.turn).toBe(1);
+    
+    clearSavedGame();
+  });
+
+  it('returns null when no save exists', () => {
+    clearSavedGame();
+    const loaded = loadGameState();
+    expect(loaded).toBeNull();
   });
 });

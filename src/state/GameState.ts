@@ -6,6 +6,8 @@ export type ResourceType =
     | 'iron' | 'stone' | 'wheat' | 'coal' | 'copper' | 'wine'
     | 'salt' | 'silver' | 'gems' | 'uranium' | 'goldore';
 
+export type ImprovementType = 'Farm' | 'Mine' | 'Quarry' | 'Pasture' | 'Plantation' | 'Well';
+
 export interface Resources {
     gold: number;
     production: number;
@@ -43,6 +45,33 @@ export const resourceBonuses: Record<ResourceType, TerrainModifiers> = {
     goldore: { gold: 3, production: 0, food: 0, culture: 0, science: 0 },
 };
 
+export const improvementBonuses: Record<ImprovementType, TerrainModifiers> = {
+    Farm: { gold: 0, production: 0, food: 2, culture: 0, science: 0 },
+    Mine: { gold: 0, production: 2, food: 0, culture: 0, science: 0 },
+    Quarry: { gold: 1, production: 1, food: 0, culture: 0, science: 0 },
+    Pasture: { gold: 0, production: 1, food: 1, culture: 0, science: 0 },
+    Plantation: { gold: 2, production: 0, food: 0, culture: 0, science: 0 },
+    Well: { gold: 2, production: 0, food: 1, culture: 0, science: 0 },
+};
+
+export const validImprovementTerrains: Record<ImprovementType, TerrainType[]> = {
+    Farm: ['Plains', 'Desert'],
+    Mine: ['Mountains', 'Forest'],
+    Quarry: ['Mountains'],
+    Pasture: ['Plains'],
+    Plantation: ['Forest', 'Desert'],
+    Well: ['Desert'],
+};
+
+export const improvementCosts: Record<ImprovementType, number> = {
+    Farm: 10,
+    Mine: 15,
+    Quarry: 15,
+    Pasture: 10,
+    Plantation: 12,
+    Well: 10,
+};
+
 export interface Tile {
     id: string;
     q: number; // Hex coordinates (axial)
@@ -50,6 +79,7 @@ export interface Tile {
     terrain: TerrainType;
     isExplored: boolean;
     resource?: ResourceType;
+    improvement?: ImprovementType;
 }
 
 export interface Building {
@@ -242,12 +272,71 @@ export function toggleAutoExpand(state: GameState): GameState {
     };
 }
 
+export function buildImprovement(state: GameState, tileId: string, improvementType: ImprovementType): GameState {
+    const tile = state.map.find(t => t.id === tileId);
+    if (!tile) return state;
+
+    if (tile.improvement) return state;
+
+    const isWorked = state.city.workedTileIds.includes(tileId);
+    if (!isWorked) return state;
+
+    const validTerrains = validImprovementTerrains[improvementType];
+    if (!validTerrains.includes(tile.terrain)) return state;
+
+    const cost = improvementCosts[improvementType];
+    if (state.city.resources.production < cost) return state;
+
+    return {
+        ...state,
+        map: state.map.map(t => 
+            t.id === tileId 
+                ? { ...t, improvement: improvementType }
+                : t
+        ),
+        city: {
+            ...state.city,
+            resources: {
+                ...state.city.resources,
+                production: state.city.resources.production - cost
+            }
+        }
+    };
+}
+
+export function canBuildImprovement(tile: Tile, improvementType: ImprovementType, production: number): { valid: boolean; reason?: string } {
+    if (tile.improvement) {
+        return { valid: false, reason: 'Tile already has an improvement' };
+    }
+
+    const isWorked = true;
+    if (!isWorked) {
+        return { valid: false, reason: 'Tile must be worked' };
+    }
+
+    const validTerrains = validImprovementTerrains[improvementType];
+    if (!validTerrains.includes(tile.terrain)) {
+        return { valid: false, reason: `Cannot build ${improvementType} on ${tile.terrain}` };
+    }
+
+    const cost = improvementCosts[improvementType];
+    if (production < cost) {
+        return { valid: false, reason: `Need ${cost} Production` };
+    }
+
+    return { valid: true };
+}
+
 export function getTileYieldSum(tile: Tile): number {
     const terrainBonus = terrainBonuses[tile.terrain];
     let sum = terrainBonus.gold + terrainBonus.production + terrainBonus.food + terrainBonus.culture + terrainBonus.science;
     if (tile.resource) {
         const resBonus = resourceBonuses[tile.resource];
         sum += resBonus.gold + resBonus.production + resBonus.food + resBonus.culture + resBonus.science;
+    }
+    if (tile.improvement) {
+        const impBonus = improvementBonuses[tile.improvement];
+        sum += impBonus.gold + impBonus.production + impBonus.food + impBonus.culture + impBonus.science;
     }
     return sum;
 }
@@ -279,6 +368,16 @@ export function calculateTurnYield(state: GameState): Resources {
                 baseYields.food += resBonus.food;
                 baseYields.culture += resBonus.culture;
                 baseYields.science += resBonus.science;
+            }
+            
+            // Add improvement bonuses if present
+            if (tile.improvement) {
+                const impBonus = improvementBonuses[tile.improvement];
+                baseYields.gold += impBonus.gold;
+                baseYields.production += impBonus.production;
+                baseYields.food += impBonus.food;
+                baseYields.culture += impBonus.culture;
+                baseYields.science += impBonus.science;
             }
         }
     }

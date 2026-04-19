@@ -21,7 +21,7 @@
 - [ ] Trade routes between cities
 - [ ] Resource trading
 - [ ] Diplomatic relations (if multiplayer)
-- [ ] Tile improvements (farm on Plains, mine on Mountains/Forests, etc.)
+- [x] Tile improvements (farm on Plains, mine on Mountains/Forests, etc.)
 - [ ] Tile resources (coal, iron, wheat, furs, meat, etc.)
 
 ## Technical

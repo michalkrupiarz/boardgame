@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
+import { buildImprovement } from './state/GameState';
 import { TileInfoPanel } from './components/Map/TileInfoPanel';
 import { CitySidePanel } from './components/City/CityView';
 
@@ -122,8 +123,10 @@ function App() {
             isWorked={gameState.city.workedTileIds.includes(selectedTile.id)}
             isLocked={gameState.city.lockedTileIds.includes(selectedTile.id)}
             canAssign={gameState.city.claimedTileIds.includes(selectedTile.id) && gameState.city.workedTileIds.length < gameState.city.population}
+            production={gameState.city.resources.production}
             onSelectAsTarget={() => handleTargetSelect(selectedTile.id)}
             onToggleWorker={() => setGameState(prev => toggleWorkedTile(prev, selectedTile.id))}
+            onBuildImprovement={(imp) => setGameState(prev => buildImprovement(prev, selectedTile.id, imp))}
             onClose={() => setSelectedTileId(undefined)} 
           />
         )}

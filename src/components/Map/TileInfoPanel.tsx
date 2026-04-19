@@ -1,5 +1,20 @@
-import { terrainBonuses } from '../../state/GameState';
+import { terrainBonuses, resourceBonuses } from '../../state/GameState';
 import type { Tile } from '../../state/GameState';
+import type { ResourceType } from '../../state/GameState';
+
+const RESOURCE_NAMES: Record<ResourceType, string> = {
+    iron: 'Iron',
+    wheat: 'Wheat',
+    stone: 'Stone',
+    coal: 'Coal',
+    copper: 'Copper',
+    wine: 'Wine',
+    salt: 'Salt',
+    silver: 'Silver',
+    gems: 'Gems',
+    uranium: 'Uranium',
+    goldore: 'Gold Ore',
+};
 
 interface TileInfoPanelProps {
     tile: Tile | null;
@@ -21,6 +36,8 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
     if (!tile) return null;
 
     const bonuses = terrainBonuses[tile.terrain];
+    const resource = tile.resource;
+    const resBonuses = resource ? resourceBonuses[resource] : null;
 
     const getStatusDisplay = () => {
         if (isClaimed) return { text: '✓ Claimed Territory', color: '#4ade80' };
@@ -53,6 +70,11 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
                     borderRadius: '4px'
                 }}></span>
                 {tile.terrain}
+                {resource && (
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginLeft: 'auto' }}>
+                        {RESOURCE_NAMES[resource]}
+                    </span>
+                )}
             </h3>
             
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '8px' }}>
@@ -74,23 +96,23 @@ export const TileInfoPanel: React.FC<TileInfoPanelProps> = ({
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Food</span>
-                    <span className="text-food">+{bonuses.food}</span>
+                    <span className="text-food">+{bonuses.food}{resBonuses ? ` +${resBonuses.food}` : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Production</span>
-                    <span className="text-production">+{bonuses.production}</span>
+                    <span className="text-production">+{bonuses.production}{resBonuses ? ` +${resBonuses.production}` : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Gold</span>
-                    <span className="text-gold">+{bonuses.gold}</span>
+                    <span className="text-gold">+{bonuses.gold}{resBonuses ? ` +${resBonuses.gold}` : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Science</span>
-                    <span className="text-science">+{bonuses.science}</span>
+                    <span className="text-science">+{bonuses.science}{resBonuses ? ` +${resBonuses.science}` : ''}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>Culture</span>
-                    <span className="text-culture">+{bonuses.culture}</span>
+                    <span className="text-culture">+{bonuses.culture}{resBonuses ? ` +${resBonuses.culture}` : ''}</span>
                 </div>
             </div>
 

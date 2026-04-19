@@ -2,6 +2,10 @@
 
 export type TerrainType = 'Plains' | 'Forest' | 'Mountains' | 'Desert';
 
+export type ResourceType = 
+    | 'iron' | 'stone' | 'wheat' | 'coal' | 'copper' | 'wine'
+    | 'salt' | 'silver' | 'gems' | 'uranium' | 'goldore';
+
 export interface Resources {
     gold: number;
     production: number;
@@ -25,12 +29,27 @@ export const terrainBonuses: Record<TerrainType, TerrainModifiers> = {
     Desert: { gold: 2, production: 0, food: 0, culture: 1, science: 2 },
 };
 
+export const resourceBonuses: Record<ResourceType, TerrainModifiers> = {
+    iron: { gold: 0, production: 2, food: 0, culture: 0, science: 0 },
+    wheat: { gold: 0, production: 0, food: 2, culture: 0, science: 0 },
+    stone: { gold: 1, production: 1, food: 0, culture: 0, science: 0 },
+    coal: { gold: 1, production: 2, food: 0, culture: 0, science: 0 },
+    copper: { gold: 2, production: 1, food: 0, culture: 0, science: 0 },
+    wine: { gold: 1, production: 0, food: 1, culture: 0, science: 0 },
+    salt: { gold: 0, production: 0, food: 2, culture: 1, science: 0 },
+    silver: { gold: 2, production: 1, food: 0, culture: 0, science: 0 },
+    gems: { gold: 2, production: 0, food: 0, culture: 0, science: 1 },
+    uranium: { gold: 0, production: 1, food: 0, culture: 0, science: 3 },
+    goldore: { gold: 3, production: 0, food: 0, culture: 0, science: 0 },
+};
+
 export interface Tile {
     id: string;
     q: number; // Hex coordinates (axial)
     r: number; // Hex coordinates (axial)
     terrain: TerrainType;
     isExplored: boolean;
+    resource?: ResourceType;
 }
 
 export interface Building {
@@ -69,25 +88,43 @@ export interface GameState {
     map: Tile[];
 }
 
+const RESOURCES: ResourceType[] = [
+    'iron', 'iron', 'iron', 'iron', 'iron', 'iron', 'iron', 'iron', 'iron', // 45% common
+    'wheat', 'wheat', 'wheat', 
+    'stone', 'stone',
+    'coal', 'coal', 'copper', 'wine', // 25% uncommon
+    'salt', 'silver', // 15% rare
+    'gems', 'uranium', // 10% very rare
+    'goldore', // 5% ultra rare
+];
+
 export function generateInitialMap(size: number): Tile[] {
     const tiles: Tile[] = [];
     const terrains: TerrainType[] = ['Plains', 'Forest', 'Mountains', 'Desert'];
 
     // Generate a hexagonal grid (axial coordinates)
-        const radius = Math.floor(size / 2);
+    const radius = Math.floor(size / 2);
     for (let q = -radius; q <= radius; q++) {
         const r1 = Math.max(-radius, -q - radius);
         const r2 = Math.min(radius, -q + radius);
         for (let r = r1; r <= r2; r++) {
-            // For determinism in tests, you might want to seed this, but random is okay for now
             const terrain = terrains[Math.floor(Math.random() * terrains.length)];
             const isCenter = q === 0 && r === 0;
+            
+            // 12% chance to have a resource, but not on center tile
+            let resource: ResourceType | undefined;
+            if (!isCenter && Math.random() < 0.12) {
+                const idx = Math.floor(Math.random() * RESOURCES.length);
+                resource = RESOURCES[idx];
+            }
+            
             tiles.push({
                 id: `${q},${r}`,
                 q,
                 r,
                 terrain: isCenter ? 'Plains' : terrain,
-                isExplored: true // Starts explored for simplicity
+                isExplored: true,
+                resource
             });
         }
     }
@@ -206,8 +243,13 @@ export function toggleAutoExpand(state: GameState): GameState {
 }
 
 export function getTileYieldSum(tile: Tile): number {
-    const bonuses = terrainBonuses[tile.terrain];
-    return bonuses.gold + bonuses.production + bonuses.food + bonuses.culture + bonuses.science;
+    const terrainBonus = terrainBonuses[tile.terrain];
+    let sum = terrainBonus.gold + terrainBonus.production + terrainBonus.food + terrainBonus.culture + terrainBonus.science;
+    if (tile.resource) {
+        const resBonus = resourceBonuses[tile.resource];
+        sum += resBonus.gold + resBonus.production + resBonus.food + resBonus.culture + resBonus.science;
+    }
+    return sum;
 }
 
 // Calculates the per-turn yield based on city buildings and mapped tile radius.
@@ -216,18 +258,28 @@ export function calculateTurnYield(state: GameState): Resources {
         gold: 0, production: 0, food: 0, culture: 0, science: 0
     };
 
-    // Add map yields
+    // Add map yields with resource bonuses
     for (const tile of state.map) {
         const isCityCenter = tile.q === 0 && tile.r === 0;
         const isWorked = state.city.workedTileIds.includes(tile.id);
         
         if (tile.isExplored && (isCityCenter || isWorked)) {
-            const bonuses = terrainBonuses[tile.terrain];
-            baseYields.gold += bonuses.gold;
-            baseYields.production += bonuses.production;
-            baseYields.food += bonuses.food;
-            baseYields.culture += bonuses.culture;
-            baseYields.science += bonuses.science;
+            const terrainBonus = terrainBonuses[tile.terrain];
+            baseYields.gold += terrainBonus.gold;
+            baseYields.production += terrainBonus.production;
+            baseYields.food += terrainBonus.food;
+            baseYields.culture += terrainBonus.culture;
+            baseYields.science += terrainBonus.science;
+            
+            // Add resource bonuses if present
+            if (tile.resource) {
+                const resBonus = resourceBonuses[tile.resource];
+                baseYields.gold += resBonus.gold;
+                baseYields.production += resBonus.production;
+                baseYields.food += resBonus.food;
+                baseYields.culture += resBonus.culture;
+                baseYields.science += resBonus.science;
+            }
         }
     }
 

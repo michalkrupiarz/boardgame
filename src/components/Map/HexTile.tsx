@@ -1,6 +1,20 @@
 import React from 'react';
-import type { Tile, TerrainType } from '../../state/GameState';
+import type { Tile, TerrainType, ResourceType } from '../../state/GameState';
 import './HexMap.css';
+
+const RESOURCE_ICONS: Record<ResourceType, string> = {
+    iron: '⛏️',
+    wheat: '🌾',
+    stone: '🪨',
+    coal: '⚫',
+    copper: '🥉',
+    wine: '🍇',
+    salt: '🧂',
+    silver: '🥈',
+    gems: '💎',
+    uranium: '☢️',
+    goldore: '🪙',
+};
 
 interface HexTileProps {
     tile: Tile;
@@ -91,6 +105,19 @@ export const HexTile: React.FC<HexTileProps> = ({
                             {population}
                         </text>
                     )}
+                </g>
+            )}
+            {/* Resource indicator */}
+            {tile.resource && (
+                <g transform={`translate(${-w + 8}, ${-h/2 + 12})`}>
+                    <text 
+                        fontSize={10 * iconScale} 
+                        fill="white"
+                        stroke="rgba(0,0,0,0.5)"
+                        strokeWidth={1}
+                    >
+                        {RESOURCE_ICONS[tile.resource]}
+                    </text>
                 </g>
             )}
             {/* Worker Icon (Human Head) in the middle of the tile */}

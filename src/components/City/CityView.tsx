@@ -1,4 +1,4 @@
-import { AVAILABLE_BUILDINGS } from '../../state/GameState';
+import { AVAILABLE_BUILDINGS, getTileYieldSum } from '../../state/GameState';
 import type { GameState } from '../../state/GameState';
 
 interface CitySidePanelProps {
@@ -70,6 +70,20 @@ export const CitySidePanel: React.FC<CitySidePanelProps> = ({ state, onBuild }) 
                         <p>Population: <strong style={{ color: 'white' }}>{state.city.population}</strong></p>
                         <p>Citizens working: <strong style={{ color: 'white' }}>{state.city.workedTileIds.filter(id => id !== '0,0').length}</strong></p>
                         <p>Available: <strong style={{ color: 'white' }}>{state.city.population - state.city.workedTileIds.filter(id => id !== '0,0').length}</strong></p>
+                    </div>
+                    <h4 style={{ marginTop: '20px', marginBottom: '10px', color: 'var(--text-secondary)' }}>Yield Breakdown</h4>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.8rem' }}>
+                        {state.city.workedTileIds.map(tileId => {
+                            const tile = state.map.find(t => t.id === tileId);
+                            if (!tile) return null;
+                            const yieldSum = getTileYieldSum(tile);
+                            return (
+                                <div key={tileId} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 8px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
+                                    <span>{tile.terrain}{tile.resource ? ` (${tile.resource})` : ''}{tile.improvement ? ` [${tile.improvement}]` : ''}</span>
+                                    <span className="text-food">+{yieldSum}</span>
+                                </div>
+                            );
+                        })}
                     </div>
                 </div>
             </div>

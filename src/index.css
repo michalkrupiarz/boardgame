@@ -94,8 +94,60 @@ button {
   100% { transform: scale(1); }
 }
 
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
 .animate-pulse-slow {
   animation: pulse 3s infinite ease-in-out;
+}
+
+.animate-pop {
+  animation: pop 0.5s ease-out;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .app-container {
+    flex-direction: column;
+  }
+  
+  .ui-layer > div {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    padding: 10px !important;
+  }
+  
+  .glass-pill {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+  }
+  
+  .map-container {
+    min-height: 50vh;
+  }
+}
+
+@media (max-width: 480px) {
+  .ui-layer > div {
+    padding: 8px !important;
+    gap: 4px !important;
+  }
+  
+  .glass-pill span:last-child {
+    display: none;
+  }
 }
 
 /* Utilities */

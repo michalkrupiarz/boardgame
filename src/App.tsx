@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance, saveGameState, loadGameState, clearSavedGame } from './state/GameState';
+import { getInitialState, nextTurn, buildBuilding, calculateTurnYield, toggleWorkedTile, isAdjacentToClaimed, getClaimCost, getDistance, saveGameState, loadGameState, clearSavedGame, checkVictory } from './state/GameState';
 import type { GameState } from './state/GameState';
 import { HexMap } from './components/Map/HexMap';
 import { buildImprovement } from './state/GameState';
@@ -13,11 +13,24 @@ function App() {
   });
   const [selectedTileId, setSelectedTileId] = useState<string | undefined>();
   const [showCityPanels, setShowCityPanels] = useState(false);
+  const [victory, setVictory] = useState<string[]>([]);
+  const [showHelp, setShowHelp] = useState(false);
 
   const selectedTile = gameState.map.find(t => t.id === selectedTileId) || null;
 
   const handleNextTurn = () => {
-    setGameState(prev => nextTurn(prev));
+    setGameState(prev => {
+      const newState = nextTurn(prev);
+      const conditions = checkVictory(newState);
+      const newVictories = conditions.filter(c => c.achieved).map(c => c.description);
+      if (newVictories.length > 0) {
+        setVictory(prevVictory => {
+          const combined = [...newVictories, ...prevVictory];
+          return [...new Set(combined)];
+        });
+      }
+      return newState;
+    });
   };
 
   const handleTileClick = (tile: { id: string; q: number; r: number }) => {
@@ -132,6 +145,12 @@ function App() {
               <span style={{ fontSize: '0.8em', opacity: 0.8 }}>(+{currentYields.culture})</span>
             </div>
 
+            {victory.length > 0 && (
+              <div className="glass-pill" style={{ background: 'linear-gradient(135deg, #fbbf24, #f59e0b)', border: '2px solid #fff' }}>
+                <span style={{ fontWeight: 700 }}>🎉 VICTORY: {victory.join(', ')}</span>
+              </div>
+            )}
+
             {targetTile && (
               <div className="glass-pill text-culture" style={{ border: '2px solid #ec4899' }}>
                 <span>Next: {targetTile.terrain} ({getClaimCost(getDistance(targetTile.q, targetTile.r))} Cult)</span>
@@ -162,8 +181,29 @@ function App() {
             >
               Next Turn
             </button>
+            <button 
+              className="glass-panel"
+              style={{ padding: '0 20px', fontWeight: '600', color: 'white', background: 'var(--bg-panel)' }}
+              onClick={() => setShowHelp(!showHelp)}
+            >
+              ?
+            </button>
           </div>
         </div>
+
+        {showHelp && (
+          <div className="glass-panel" style={{ position: 'absolute', top: '80px', left: '50%', transform: 'translateX(-50%)', padding: '20px', zIndex: 100, maxWidth: '400px' }}>
+            <h3 style={{ marginTop: 0 }}>Keyboard Shortcuts</h3>
+            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '8px', fontSize: '0.9rem' }}>
+              <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>Space</code><span>Next Turn</span>
+              <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>C</code><span>Toggle City View</span>
+              <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>R</code><span>Reset Game</span>
+              <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>S</code><span>Save Game</span>
+              <code style={{ background: 'rgba(255,255,255,0.1)', padding: '2px 8px', borderRadius: '4px' }}>Esc</code><span>Close Panel</span>
+            </div>
+            <button onClick={() => setShowHelp(false)} style={{ marginTop: '15px', background: 'var(--accent)', border: 'none', color: 'white', padding: '8px 16px', borderRadius: '6px' }}>Close</button>
+          </div>
+        )}
 
         {selectedTile && !showCityPanels && (
           <TileInfoPanel 

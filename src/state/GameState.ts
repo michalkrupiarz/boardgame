@@ -196,6 +196,38 @@ export function getInitialState(mapSize: number = 7): GameState {
     };
 }
 
+export interface VictoryCondition {
+    type: 'population' | 'culture' | 'buildings';
+    description: string;
+    achieved: boolean;
+}
+
+export function checkVictory(state: GameState): VictoryCondition[] {
+    const conditions: VictoryCondition[] = [];
+    
+    conditions.push({
+        type: 'population',
+        description: 'Reach 20 population',
+        achieved: state.city.population >= 20
+    });
+    
+    const radius = getCurrentRadius(state.city.resources.culture);
+    conditions.push({
+        type: 'culture',
+        description: 'Expand culture radius to 4',
+        achieved: radius >= 4
+    });
+    
+    const uniqueBuildings = new Set(state.city.buildings);
+    conditions.push({
+        type: 'buildings',
+        description: 'Build 5 different buildings',
+        achieved: uniqueBuildings.size >= 5
+    });
+    
+    return conditions;
+}
+
 const STORAGE_KEY = 'cityBuilder_save';
 
 export function saveGameState(state: GameState): void {

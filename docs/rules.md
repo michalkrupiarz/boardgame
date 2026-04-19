@@ -145,7 +145,18 @@ There are five resources in the game:
 
 ## 9. Victory Conditions
 
-*Victory conditions are yet to be defined. This section will be updated as the game develops.*
+The game ends when any of the following victory conditions are met:
+
+**9.1 Population Victory**
+Reach a population of **20** or more citizens.
+
+**9.2 Cultural Expansion**
+Expand your cultural radius to **4** tiles (requires 350+ Culture accumulated).
+
+**9.3 Building Mastery**
+Construct at least **5 different types** of buildings.
+
+The game announces victory immediately when achieved. Multiple victories can be achieved in the same game.
 
 ---
 
